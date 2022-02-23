@@ -48,7 +48,7 @@ Then commit the changes to `go.mod` and `go.sum`.
 terraform {
   required_providers {
     hsdp = {
-      source = "philips-labs/unleash"
+      source = "philips-labs/unleash" // not published yet :/
       version = ">= 0.0.1"
     }
   }
