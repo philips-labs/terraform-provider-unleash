@@ -26,6 +26,22 @@ $ go build .
 
 Copy the resulting binary to the appropriate [plugin directory](https://www.terraform.io/docs/configuration/providers.html#third-party-plugins) e.g. `.terraform.d/plugins/darwin_amd64/terraform-provider-unleash`
 
+## Acceptance tests
+
+In order to run the full suite of Acceptance tests, run `make testacc`.
+
+*Note:* Acceptance tests create real resources, so it requires access to a Unleash server.
+
+You can run the Unleash server locally using Docker, see [docs](https://docs.getunleash.io/deploy/getting_started#option-one---use-docker).
+
+Then, you need to set the following environment variables:
+- UNLEASH_API_URL: Usually the URL will be: `http:localhost:4242/api/`
+- UNLEASH_AUTH_TOKEN: Login with the default Admin user (username: `admin` / password: `unleash4all`) and generate an `Admin` API token. See how to generate it [here](https://docs.getunleash.io/user_guide/api-token#create-api-token).
+
+```sh
+$ make testacc
+```
+
 ## Adding Dependencies
 
 This provider uses [Go modules](https://github.com/golang/go/wiki/Modules).

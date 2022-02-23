@@ -28,12 +28,14 @@ func New(version string) func() *schema.Provider {
 					Type:        schema.TypeString,
 					Required:    true,
 					Description: descriptions["api_url"],
+					DefaultFunc: schema.EnvDefaultFunc("UNLEASH_API_URL", nil),
 				},
 				"auth_token": {
 					Type:        schema.TypeString,
 					Required:    true,
 					Sensitive:   true,
 					Description: descriptions["auth_token"],
+					DefaultFunc: schema.EnvDefaultFunc("UNLEASH_AUTH_TOKEN", nil),
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
