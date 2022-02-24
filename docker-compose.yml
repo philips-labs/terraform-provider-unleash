@@ -1,0 +1,21 @@
+# unleash server and db used for local testing / acceptance tests
+version: "3.7"
+services:
+  unleash:
+    image: unleashorg/unleash-server
+    ports:
+      - "4242:4242"
+    environment:
+      DATABASE_HOST: "postgres"
+      DATABASE_NAME: "unleash"
+      DATABASE_USERNAME: "unleash_user"
+      DATABASE_PASSWORD: "some_password"
+      DATABASE_SSL: false
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: "unleash_user"
+      POSTGRES_PASSWORD: "some_password"
+      POSTGRES_DB: "unleash"
