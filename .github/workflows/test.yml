@@ -9,9 +9,8 @@ on:
   # The Unleash API could drift unexpectedly (like most SaaS systems, etc.), so its recommended testing 
   # at a regular interval not necessarily tied to code changes. This will 
   # ensure we are alerted to something breaking due to an API change, even if the code did not change.
-  # TODO: Enable schedule when enabling the acceptance tests.
-  # schedule:
-  #   - cron: '0 13 * * *'
+  schedule:
+    - cron: '0 13 * * *'
 jobs:
   # ensure at least the code builds...
   build:
