@@ -4,6 +4,7 @@ on:
     paths-ignore:
       - 'README.md'
   push:
+    branches: [main]
     paths-ignore:
       - 'README.md'
   # The Unleash API could drift unexpectedly (like most SaaS systems, etc.), so its recommended testing 
