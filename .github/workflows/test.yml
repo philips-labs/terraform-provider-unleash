@@ -72,6 +72,8 @@ jobs:
       env:
         TF_ACC: "1"
         TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform }}
+        UNLEASH_API_URL: http://localhost:4242/api/
+        UNLEASH_AUTH_TOKEN: token
 
       run: |
         go test -v -cover ./internal/provider/
