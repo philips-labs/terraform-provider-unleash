@@ -11,6 +11,7 @@ services:
       DATABASE_USERNAME: "unleash_user"
       DATABASE_PASSWORD: "some_password"
       DATABASE_SSL: false
+      AUTH_TYPE: "NONE"
     depends_on:
       - postgres
   postgres:

@@ -34,14 +34,10 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 
 You can run the Unleash server locally using Docker, run `docker-compose up -d`
 
-Then, you need to set the following environment variables:
-- UNLEASH_API_URL: `http:localhost:4242/api/`
-- UNLEASH_AUTH_TOKEN: Go to `http://localhost:4242` and login with the default Admin user (username: `admin` / password: `unleash4all`) and generate an `Admin` API token. See how to generate it [here](https://docs.getunleash.io/user_guide/api-token#create-api-token).
-
-Finally, run:
+Then, run:
 
 ```sh
-$ make testacc
+make testacc
 ```
 
 ## Adding Dependencies
