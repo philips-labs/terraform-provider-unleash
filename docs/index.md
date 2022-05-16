@@ -24,5 +24,5 @@ provider "unleash" {
 
 ### Required
 
-- **api_url** (String) URL of the unleash API
-- **auth_token** (String, Sensitive) Authentication token to authenticate to the Unleash API
+- `api_url` (String) URL of the unleash API
+- `auth_token` (String, Sensitive) Authentication token to authenticate to the Unleash API
