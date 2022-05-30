@@ -34,7 +34,6 @@ resource "unleash_feature" "variants_example" {
   variant {
     name = "Variant1"
   }
-
   variant {
     name = "Variant2"
     payload {
@@ -83,7 +82,7 @@ Optional:
 - `overrides` (Block Set) Overrides existing context field values. Values are comma separated e.g `v1, v2, ...`) (see [below for nested schema](#nestedblock--variant--overrides))
 - `payload` (Block Set, Max: 1) Variant payload. The type of the payload can be `string`, `json` or `csv` (see [below for nested schema](#nestedblock--variant--payload))
 - `stickiness` (String) Variant stickiness. Default is `default`.
-- `weight` (Number) Variant weight. When more than one variant and `weight_type` is variable it is calculated automatically.
+- `weight` (Number) Variant weight. Only considered when the `weight_type` is `fix`. It is calculated automatically if the `weight_type` is `variable`.
 - `weight_type` (String) Variant weight type. The weight type can be `fix` or `variable`. Default is `variable`.
 
 <a id="nestedblock--variant--overrides"></a>

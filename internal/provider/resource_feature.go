@@ -62,9 +62,10 @@ func resourceFeature() *schema.Resource {
 							Default:     "default",
 						},
 						"weight": {
-							Description:  "Variant weight. When more than one variant and `weight_type` is variable it is calculated automatically.",
+							Description:  "Variant weight. Only considered when the `weight_type` is `fix`. It is calculated automatically if the `weight_type` is `variable`.",
 							Type:         schema.TypeInt,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.IntBetween(0, 1000),
 						},
 						"weight_type": {

@@ -19,7 +19,6 @@ resource "unleash_feature" "variants_example" {
   variant {
     name = "Variant1"
   }
-
   variant {
     name = "Variant2"
     payload {
