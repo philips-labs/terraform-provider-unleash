@@ -44,6 +44,12 @@ func resourceFeature() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 			},
+			"archive_on_destroy": {
+				Description: "Whether to archive the feature toggle on destroy. Default is `true`. When `false`, it will permanently delete the feature toggle.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
 			"variant": {
 				Description: "Feature variant",
 				Type:        schema.TypeList,
@@ -236,6 +242,13 @@ func resourceFeatureDelete(ctx context.Context, d *schema.ResourceData, meta int
 	_, _, err := client.FeatureToggles.ArchiveFeature(projectId, featureName)
 	if err != nil {
 		return diag.FromErr(err)
+	}
+	shouldArchive := d.Get("archive_on_destroy").(bool)
+	if !shouldArchive {
+		_, _, err := client.FeatureToggles.DeleteArchivedFeature(featureName)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	d.SetId("")
 	return diags

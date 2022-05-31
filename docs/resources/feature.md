@@ -63,6 +63,7 @@ resource "unleash_feature" "variants_example" {
 
 ### Optional
 
+- `archive_on_destroy` (Boolean) Whether to archive the feature toggle on destroy. Default is `true`. When `false`, it will permanently delete the feature toggle.
 - `description` (String) Feature description
 - `variant` (Block List) Feature variant (see [below for nested schema](#nestedblock--variant))
 
