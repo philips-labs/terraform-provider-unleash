@@ -41,6 +41,5 @@ resource "unleash_user" "my_user" {
 - `email_sent` (Boolean) Whether the welcome email was successfully sent to the user.
 - `id` (String) The ID of this resource.
 - `invite_link` (String) The link for the login link.
-- `user_id` (Number) The user's id.
 
 

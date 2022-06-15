@@ -42,6 +42,8 @@ func New(version string) func() *schema.Provider {
 				"unleash_feature":      dataSourceFeature(),
 				"unleash_project":      dataSourceProject(),
 				"unleash_feature_type": dataSourceFeatureType(),
+				"unleash_users":        dataSourceUsers(),
+				"unleash_user":         dataSourceUser(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"unleash_feature":             resourceFeature(),

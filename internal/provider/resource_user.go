@@ -12,12 +12,6 @@ import (
 	"github.com/philips-labs/go-unleash-api/api"
 )
 
-var rolesLookup = map[string]int{
-	"Admin":  1,
-	"Editor": 2,
-	"Viewer": 3,
-}
-
 func resourceUser() *schema.Resource {
 	return &schema.Resource{
 		// This description is used by the documentation generator and the language server.
@@ -58,11 +52,6 @@ func resourceUser() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     true,
-			},
-			"user_id": {
-				Description: "The user's id.",
-				Type:        schema.TypeInt,
-				Computed:    true,
 			},
 			"invite_link": {
 				Description: "The link for the login link.",
@@ -126,7 +115,6 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		}
 		return diag.FromErr(err)
 	}
-	_ = d.Set("user_id", user.Id)
 	_ = d.Set("name", user.Name)
 	_ = d.Set("username", user.Username)
 	_ = d.Set("email", user.Email)
