@@ -12,6 +12,12 @@ import (
 	"github.com/philips-labs/go-unleash-api/api"
 )
 
+var rolesLookup = map[string]int{
+	"Admin":  1,
+	"Editor": 2,
+	"Viewer": 3,
+}
+
 func resourceUser() *schema.Resource {
 	return &schema.Resource{
 		// This description is used by the documentation generator and the language server.
@@ -78,7 +84,7 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, meta interf
 	var diags diag.Diagnostics
 
 	givenUserRole := d.Get("root_role").(string)
-	roleId := getUserRoleId(givenUserRole)
+	roleId := rolesLookup[givenUserRole]
 	user := &api.User{
 		Name:      d.Get("name").(string),
 		Email:     d.Get("email").(string),
@@ -124,7 +130,12 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	_ = d.Set("name", user.Name)
 	_ = d.Set("username", user.Username)
 	_ = d.Set("email", user.Email)
-	_ = d.Set("root_role", getUserRole(user.RootRole))
+
+	for k, v := range rolesLookup {
+		if v == user.RootRole {
+			_ = d.Set("root_role", k)
+		}
+	}
 
 	return diags
 }
@@ -135,7 +146,7 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, meta interf
 	var diags diag.Diagnostics
 
 	givenUserRole := d.Get("root_role").(string)
-	roleId := getUserRoleId(givenUserRole)
+	roleId := rolesLookup[givenUserRole]
 	user := &api.User{
 		Name:      d.Get("name").(string),
 		Email:     d.Get("email").(string),
