@@ -53,11 +53,6 @@ func resourceUser() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
-			"user_id": {
-				Description: "The user's id.",
-				Type:        schema.TypeInt,
-				Computed:    true,
-			},
 			"invite_link": {
 				Description: "The link for the login link.",
 				Type:        schema.TypeString,
@@ -120,7 +115,6 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		}
 		return diag.FromErr(err)
 	}
-	_ = d.Set("user_id", user.Id)
 	_ = d.Set("name", user.Name)
 	_ = d.Set("username", user.Username)
 	_ = d.Set("email", user.Email)

@@ -31,7 +31,7 @@ func dataSourceUsers() *schema.Resource {
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"user_id": {
+						"id": {
 							Description: "The user's id.",
 							Type:        schema.TypeInt,
 							Computed:    true,
@@ -95,7 +95,7 @@ func dataSourceUsersRead(ctx context.Context, d *schema.ResourceData, meta inter
 			return diag.FromErr(err)
 		}
 		tfMap := map[string]interface{}{}
-		tfMap["user_id"] = userDetails.Id
+		tfMap["id"] = userDetails.Id
 		tfMap["name"] = userDetails.Name
 		tfMap["username"] = userDetails.Username
 		tfMap["email"] = userDetails.Email

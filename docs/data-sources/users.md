@@ -41,10 +41,10 @@ Read-Only:
 
 - `created_at` (String)
 - `email` (String)
+- `id` (Number)
 - `image_url` (String)
 - `name` (String)
 - `root_role` (String)
-- `user_id` (Number)
 - `username` (String)
 
 
