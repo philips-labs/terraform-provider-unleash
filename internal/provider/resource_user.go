@@ -12,12 +12,6 @@ import (
 	"github.com/philips-labs/go-unleash-api/api"
 )
 
-var rolesLookup = map[string]int{
-	"Admin":  1,
-	"Editor": 2,
-	"Viewer": 3,
-}
-
 func resourceUser() *schema.Resource {
 	return &schema.Resource{
 		// This description is used by the documentation generator and the language server.
