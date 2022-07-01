@@ -84,16 +84,12 @@ func resourceStrategyAssignmentCreate(ctx context.Context, d *schema.ResourceDat
 			return diag.FromErr(api.ErrNotFound)
 		}
 
-		if len(givenParams) != len(strategy.Parameters) {
-			return diag.FromErr(ErrStrategyParametersRequired)
-		}
-		convertedParams := make(map[string]interface{}) // convert provided params from string to the actual param type
+		convertedParams := make(map[string]interface{})
 		for _, param := range strategy.Parameters {
-			if _, ok := givenParams[param.Name]; !ok {
+			if _, ok := givenParams[param.Name]; !ok && param.Required {
 				return diag.FromErr(ErrStrategyParametersRequired)
 			}
-			value := givenParams[param.Name].(string)
-			convertedParams[param.Name] = newParameterInputConvertion()[param.Type](value)
+			convertedParams[param.Name] = givenParams[param.Name].(string)
 		}
 
 		featureStrategy.Parameters = convertedParams
@@ -151,7 +147,7 @@ func resourceStrategyAssignmentRead(ctx context.Context, d *schema.ResourceData,
 					convertedParams := make(map[string]interface{}) // convert actual param type back to string
 					retrievedParams := featureStrategy.Parameters
 					for _, param := range strategy.Parameters {
-						convertedParams[param.Name] = newParameterOutputConvertion()[param.Type](retrievedParams.(map[string]interface{})[param.Name])
+						convertedParams[param.Name] = retrievedParams.(map[string]interface{})[param.Name].(string)
 					}
 					_ = d.Set("parameters", convertedParams)
 				}
@@ -186,16 +182,12 @@ func resourceStrategyAssignmentUpdate(ctx context.Context, d *schema.ResourceDat
 			return diag.FromErr(api.ErrNotFound)
 		}
 
-		if len(vv) != len(found.Parameters) {
-			return diag.FromErr(ErrStrategyParametersRequired)
-		}
-		convertedParams := make(map[string]interface{}) // convert provided params from string to the actual param type
+		convertedParams := make(map[string]interface{})
 		for _, param := range found.Parameters {
-			if _, ok := vv[param.Name]; !ok {
+			if _, ok := vv[param.Name]; !ok && param.Required {
 				return diag.FromErr(ErrStrategyParametersRequired)
 			}
-			value := vv[param.Name].(string)
-			convertedParams[param.Name] = newParameterInputConvertion()[param.Type](value)
+			convertedParams[param.Name] = vv[param.Name].(string)
 		}
 
 		strategy.Parameters = convertedParams
