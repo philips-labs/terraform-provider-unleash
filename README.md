@@ -78,6 +78,10 @@ provider "unleash" {
 
 To generate or update documentation, run `go generate`.
 
+## Issues
+
+Before opening any issues, please make sure you are running the latest version of the provider and the unleash server, we try to keep up to date with the changes in the Unleash API. :)
+
 ## LICENSE
 
 License is MIT

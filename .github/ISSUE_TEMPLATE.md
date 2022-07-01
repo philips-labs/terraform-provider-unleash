@@ -5,6 +5,14 @@ Thank you for opening an issue. Please note that we try to keep the Terraform is
 ### Terraform Version
 Run `terraform -v` to show the version. If you are not running the latest version of Terraform, please upgrade because your issue may have already been fixed.
 
+### Provider Version
+Please indicate the Provider version you are using.
+If you are not running the latest version of the Provider, please upgrade because your issue may have already been fixed.
+
+### Unleash Server Version
+Please indicate the Unleash server version you are using.
+We try to keep up to date with the changes in the Unleash API, the latest version of the provider should be compatible with the latest version of the Unleash server.
+
 ### Affected Resource(s)
 Please list the resources as a list, for example:
 - opc_instance
