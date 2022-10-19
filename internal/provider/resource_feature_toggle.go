@@ -258,7 +258,20 @@ func resourceFeatureToggleRead(ctx context.Context, d *schema.ResourceData, meta
 	_ = d.Set("type", feature.Type)
 	_ = d.Set("project_id", feature.Project)
 	_ = d.Set("variant", flattenVariants(feature.Variants))
-	// _ = d.Set("environment", flattenEnvironments(feature.Environments))
+
+	if e, ok := d.GetOk("environment"); ok {
+		toSave := []api.Environment{}
+
+		for _, env := range feature.Environments {
+			for _, tfEnvironment := range e.([]interface{}) {
+				if tfEnvironment.(map[string]interface{})["name"] == env.Name { // the api returns all envs, so we only add to the state whats defined in TF
+					toSave = append(toSave, env)
+				}
+			}
+		}
+
+		_ = d.Set("environment", flattenEnvironments(toSave))
+	}
 
 	return diags
 }
