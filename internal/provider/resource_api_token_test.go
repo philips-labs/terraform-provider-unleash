@@ -29,7 +29,6 @@ var testAccResourceApiToken = fmt.Sprintf(`
 resource "unleash_api_token" "foo" {
   username    = "bar%s"
   type        = "admin"
-  expires_at  = "2024-10-19"
   environment = "*"
   projects    = ["*"]
 }
