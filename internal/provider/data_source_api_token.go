@@ -11,33 +11,32 @@ import (
 func dataSourceApiToken() *schema.Resource {
 	return &schema.Resource{
 		// This description is used by the documentation generator and the language server.
-		Description: "Retrieves details of a single api token.",
+		Description: "Retrieves a single api token based on provided filters. It raises an error if more than one token is returned.",
 
 		ReadContext: dataSourceApiTokenRead,
 
 		// This descriptions are used by the documentation generator and the language server.
 		Schema: map[string]*schema.Schema{
 			"username": {
-				Description: "It will return the token defined for this username.",
+				Description: "Filter token by username.",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
 			"projects": {
-				Description: "It will return the token that have access to the projects defined here.",
+				Description: "Filter token by project(s).",
 				Type:        schema.TypeSet,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				Optional:    true,
 			},
-			"tokens": {
+			"token": {
 				Description: "API token",
 				Type:        schema.TypeList,
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"username": {
-							Description: "The user's username.",
-							Type:        schema.TypeString,
-							Computed:    true,
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"type": {
 							Description: "The type of the API token. Can be `client`, `admin` or `frontend`",
@@ -105,18 +104,19 @@ func dataSourceApiTokenRead(ctx context.Context, d *schema.ResourceData, meta in
 	d.SetId(buildId(username, toStringArr(projects)))
 
 	tokens := []interface{}{}
-	for _, token := range foundApiTokens {
-		tfMap := map[string]interface{}{}
-		tfMap["username"] = token.Username
-		tfMap["type"] = token.Type
-		tfMap["environment"] = token.Environment
-		tfMap["projects"] = toInterfaceArr(token.Projects)
-		tfMap["expires_at"] = token.ExpiresAt
-		tfMap["created_at"] = token.CreatedAt
-		tfMap["secret"] = token.Secret
-		tokens = append(tokens, tfMap)
-	}
-	_ = d.Set("tokens", tokens)
+	token := foundApiTokens[0]
+
+	tfMap := map[string]interface{}{}
+	tfMap["username"] = token.Username
+	tfMap["type"] = token.Type
+	tfMap["environment"] = token.Environment
+	tfMap["projects"] = toInterfaceArr(token.Projects)
+	tfMap["expires_at"] = token.ExpiresAt
+	tfMap["created_at"] = token.CreatedAt
+	tfMap["secret"] = token.Secret
+
+	tokens = append(tokens, tfMap)
+	_ = d.Set("token", tokens)
 
 	return diags
 }

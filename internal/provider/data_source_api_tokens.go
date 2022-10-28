@@ -12,33 +12,32 @@ import (
 func dataSourceApiTokens() *schema.Resource {
 	return &schema.Resource{
 		// This description is used by the documentation generator and the language server.
-		Description: "Retrieves a list of existing api tokens.",
+		Description: "Retrieves existing api tokens. Filters are optional.",
 
 		ReadContext: dataSourceApiTokensRead,
 
 		// This descriptions are used by the documentation generator and the language server.
 		Schema: map[string]*schema.Schema{
 			"username": {
-				Description: "It will return the tokens defined for this username.",
+				Description: "Filter tokens by username.",
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 			},
 			"projects": {
-				Description: "It will return the tokens that have access to the projects defined here.",
+				Description: "Filter tokens by project(s).",
 				Type:        schema.TypeSet,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				Optional:    true,
 			},
 			"tokens": {
-				Description: "List with found tokens.",
+				Description: "List of api tokens.",
 				Type:        schema.TypeList,
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"username": {
-							Description: "The user's username.",
-							Type:        schema.TypeString,
-							Computed:    true,
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"type": {
 							Description: "The type of the API token. Can be `client`, `admin` or `frontend`",
@@ -90,16 +89,23 @@ func dataSourceApiTokensRead(ctx context.Context, d *schema.ResourceData, meta i
 	}
 	allTokens := resp.Tokens
 
-	username := d.Get("username").(string)
-	projects := d.Get("projects").(*schema.Set).List()
-	var foundApiTokens []api.ApiToken
-	for _, token := range allTokens {
-		if token.Username == username && subslice(toStringArr(projects), token.Projects) {
-			foundApiTokens = append(foundApiTokens, token)
-		}
-	}
+	u, uOk := d.GetOk("username")
+	p, pOk := d.GetOk("projects")
 
-	d.SetId(buildId(username, toStringArr(projects)))
+	var foundApiTokens []api.ApiToken
+	if !uOk && !pOk {
+		foundApiTokens = allTokens
+		d.SetId(buildId("*", []string{"*"}))
+	} else {
+		username := u.(string)
+		projects := p.(*schema.Set).List()
+		for _, token := range allTokens {
+			if token.Username == username && subslice(toStringArr(projects), token.Projects) {
+				foundApiTokens = append(foundApiTokens, token)
+			}
+		}
+		d.SetId(buildId(username, toStringArr(projects)))
+	}
 
 	tokens := []interface{}{}
 	for _, token := range foundApiTokens {
