@@ -99,21 +99,11 @@ func dataSourceApiTokensRead(ctx context.Context, d *schema.ResourceData, meta i
 	} else {
 		username := u.(string)
 		projects := p.(*schema.Set).List()
-
-		if username == "" {
-			for _, token := range allTokens {
-				if subslice(toStringArr(projects), token.Projects) {
-					foundApiTokens = append(foundApiTokens, token)
-				}
-			}
-		} else {
-			for _, token := range allTokens {
-				if token.Username == username && subslice(toStringArr(projects), token.Projects) {
-					foundApiTokens = append(foundApiTokens, token)
-				}
+		for _, token := range allTokens {
+			if (username == "" || token.Username == username) && subslice(toStringArr(projects), token.Projects) {
+				foundApiTokens = append(foundApiTokens, token)
 			}
 		}
-
 		d.SetId(buildId(username, toStringArr(projects)))
 	}
 
