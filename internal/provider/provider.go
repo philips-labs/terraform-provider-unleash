@@ -44,6 +44,8 @@ func New(version string) func() *schema.Provider {
 				"unleash_feature_type": dataSourceFeatureType(),
 				"unleash_users":        dataSourceUsers(),
 				"unleash_user":         dataSourceUser(),
+				"unleash_api_tokens":   dataSourceApiTokens(),
+				"unleash_api_token":    dataSourceApiToken(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"unleash_feature":             resourceFeature(),
@@ -51,6 +53,7 @@ func New(version string) func() *schema.Provider {
 				"unleash_strategy_assignment": resourceStrategyAssignment(),
 				"unleash_feature_enabling":    resourceFeatureEnabling(),
 				"unleash_user":                resourceUser(),
+				"unleash_api_token":           resourceApiToken(),
 			},
 		}
 
