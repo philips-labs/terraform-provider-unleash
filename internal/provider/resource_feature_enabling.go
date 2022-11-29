@@ -39,7 +39,7 @@ func resourceFeatureEnabling() *schema.Resource {
 				ForceNew:    true,
 			},
 			"enabled": {
-				Description: "Whether the feature is on/off in the provided environment",
+				Description: "Whether the feature is on/off in the provided environment. Default is `true` (on).",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     true,

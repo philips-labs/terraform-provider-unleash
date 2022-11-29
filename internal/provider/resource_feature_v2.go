@@ -10,15 +10,15 @@ import (
 	"github.com/philips-labs/go-unleash-api/api"
 )
 
-func resourceFeatureToggle() *schema.Resource {
+func resourceFeatureV2() *schema.Resource {
 	return &schema.Resource{
 		// This description is used by the documentation generator and the language server.
-		Description: "Provides a resource for managing unleash features with variants and environment strategies.",
+		Description: "(Experimental) Provides a resource for managing unleash features with variants and environment strategies.",
 
-		CreateContext: resourceFeatureToggleCreate,
-		ReadContext:   resourceFeatureToggleRead,
-		UpdateContext: resourceFeatureToggleUpdate,
-		DeleteContext: resourceFeatureToggleDelete,
+		CreateContext: resourceFeatureV2Create,
+		ReadContext:   resourceFeatureV2Read,
+		UpdateContext: resourceFeatureV2Update,
+		DeleteContext: resourceFeatureV2Delete,
 
 		// The descriptions are used by the documentation generator and the language server.
 		Schema: map[string]*schema.Schema{
@@ -62,7 +62,7 @@ func resourceFeatureToggle() *schema.Resource {
 							Required:    true,
 						},
 						"enabled": {
-							Description: "Whether the feature is on/off in the environment",
+							Description: "Whether the feature is on/off in the environment. Default is `true` (on)",
 							Type:        schema.TypeBool,
 							Optional:    true,
 							Default:     true,
@@ -172,7 +172,7 @@ func resourceFeatureToggle() *schema.Resource {
 	}
 }
 
-func resourceFeatureToggleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceFeatureV2Create(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*api.ApiClient)
 
 	var diags diag.Diagnostics
@@ -199,10 +199,9 @@ func resourceFeatureToggleCreate(ctx context.Context, d *schema.ResourceData, me
 			variants = append(variants, toFeatureVariant(tfVariant.(map[string]interface{})))
 		}
 		_, resp, err := client.Variants.AddVariantsForFeatureToggle(feature.Project, feature.Name, variants)
-		if resp == nil {
-			return diag.FromErr(fmt.Errorf("response is nil: %v", err))
-		}
-		if err != nil {
+		if resp == nil || err != nil {
+			client.FeatureToggles.ArchiveFeature(feature.Project, feature.Name)
+			client.FeatureToggles.DeleteArchivedFeature(feature.Name)
 			return diag.FromErr(err)
 		}
 	}
@@ -214,23 +213,24 @@ func resourceFeatureToggleCreate(ctx context.Context, d *schema.ResourceData, me
 
 			for _, strategy := range environment.Strategies {
 				_, resp, err := client.FeatureToggles.AddStrategyToFeature(feature.Project, feature.Name, environment.Name, strategy)
-				if resp == nil {
-					return diag.FromErr(fmt.Errorf("response is nil: %v", err))
-				}
-				if err != nil {
+				if resp == nil || err != nil {
+					client.FeatureToggles.ArchiveFeature(feature.Project, feature.Name)
+					client.FeatureToggles.DeleteArchivedFeature(feature.Name)
 					return diag.FromErr(err)
 				}
 
 			}
 			ok, _, err := client.FeatureToggles.EnableFeatureOnEnvironment(feature.Project, feature.Name, environment.Name, environment.Enabled)
 			if err != nil || !ok {
+				client.FeatureToggles.ArchiveFeature(feature.Project, feature.Name)
+				client.FeatureToggles.DeleteArchivedFeature(feature.Name)
 				return diag.FromErr(err)
 			}
 		}
 	}
 
 	d.SetId(createdFeature.Name)
-	readDiags := resourceFeatureToggleRead(ctx, d, meta)
+	readDiags := resourceFeatureV2Read(ctx, d, meta)
 	if readDiags != nil {
 		diags = append(diags, readDiags...)
 	}
@@ -238,7 +238,7 @@ func resourceFeatureToggleCreate(ctx context.Context, d *schema.ResourceData, me
 	return diags
 }
 
-func resourceFeatureToggleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*api.ApiClient)
 
 	var diags diag.Diagnostics
@@ -262,9 +262,9 @@ func resourceFeatureToggleRead(ctx context.Context, d *schema.ResourceData, meta
 	if e, ok := d.GetOk("environment"); ok {
 		toSave := []api.Environment{}
 
-		for _, env := range feature.Environments {
-			for _, tfEnvironment := range e.([]interface{}) {
-				if tfEnvironment.(map[string]interface{})["name"] == env.Name { // the api returns all envs, so we only add to the state whats defined in TF
+		for _, tfEnvironment := range e.([]interface{}) {
+			for _, env := range feature.Environments {
+				if tfEnvironment.(map[string]interface{})["name"] == env.Name {
 					toSave = append(toSave, env)
 				}
 			}
@@ -276,7 +276,7 @@ func resourceFeatureToggleRead(ctx context.Context, d *schema.ResourceData, meta
 	return diags
 }
 
-func resourceFeatureToggleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceFeatureV2Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*api.ApiClient)
 
 	var diags diag.Diagnostics
@@ -311,32 +311,135 @@ func resourceFeatureToggleUpdate(ctx context.Context, d *schema.ResourceData, me
 		}
 	}
 
-	// if d.HasChange("environment") {
-	// 	o, n := d.GetChange("environment")
-	// 	old := o.([]interface{})
-	// 	new := n.([]interface{})
+	if d.HasChange("environment") {
+		o, a := d.GetChange("environment")
+		old := o.([]interface{})
+		actual := a.([]interface{})
 
-	// 	tfEnvironments := d.Get("environment").([]interface{})
-	// 	for _, tfEnvironment := range tfEnvironments {
-	// 		environment := toFeatureEnvironment(tfEnvironment.(map[string]interface{}))
+		toAdd := []api.Environment{}
+		toUpdate := []api.Environment{}
+		toRemove := []api.Environment{}
 
-	// 		for _, strategy := range environment.Strategies {
-	// 			_, resp, err := client.FeatureToggles.AddStrategyToFeature(feature.Project, feature.Name, environment.Name, strategy)
-	// 			if resp == nil {
-	// 				return diag.FromErr(fmt.Errorf("response is nil: %v", err))
-	// 			}
-	// 			if err != nil {
-	// 				return diag.FromErr(err)
-	// 			}
-	// 		}
-	// 	}
-	// }
+		for _, actualEnv := range actual {
+			actualFeatureEnv := toFeatureEnvironment(actualEnv.(map[string]interface{}))
+			if isEnvIn(actualFeatureEnv.Name, old) {
+				toUpdate = append(toUpdate, actualFeatureEnv)
+			} else {
+				toAdd = append(toAdd, actualFeatureEnv)
+			}
+		}
+
+		oldEnvs := []api.Environment{}
+		for _, oldEnv := range old {
+			oldFeatureEnv := toFeatureEnvironment(oldEnv.(map[string]interface{}))
+			oldEnvs = append(oldEnvs, oldFeatureEnv)
+			if !isEnvIn(oldFeatureEnv.Name, actual) {
+				toRemove = append(toRemove, oldFeatureEnv)
+			}
+		}
+
+		for _, envToUpdate := range toUpdate {
+			actualStrats := envToUpdate.Strategies
+			oldStrats := []api.FeatureStrategy{}
+			for _, oldEnv := range oldEnvs {
+				if envToUpdate.Name == oldEnv.Name {
+					oldStrats = oldEnv.Strategies
+				}
+			}
+			for _, actualStrat := range actualStrats {
+				if isStratIn(actualStrat.ID, oldStrats) {
+					_, resp, err := client.FeatureToggles.UpdateFeatureStrategy(feature.Project, feature.Name, envToUpdate.Name, actualStrat)
+					if resp == nil {
+						return diag.FromErr(fmt.Errorf("response is nil: %v", err))
+					}
+					if err != nil {
+						return diag.FromErr(err)
+					}
+				} else {
+					_, resp, err := client.FeatureToggles.AddStrategyToFeature(feature.Project, feature.Name, envToUpdate.Name, actualStrat)
+					if resp == nil {
+						return diag.FromErr(fmt.Errorf("response is nil: %v", err))
+					}
+					if err != nil {
+						return diag.FromErr(err)
+					}
+				}
+			}
+
+			for _, oldStrat := range oldStrats {
+				if !isStratIn(oldStrat.ID, actualStrats) {
+					_, _, err = client.FeatureToggles.DeleteStrategyFromFeature(feature.Project, feature.Name, envToUpdate.Name, oldStrat.ID)
+					if err != nil {
+						return diag.FromErr(err)
+					}
+				}
+			}
+
+			ok, _, err := client.FeatureToggles.EnableFeatureOnEnvironment(feature.Project, feature.Name, envToUpdate.Name, envToUpdate.Enabled)
+			if err != nil || !ok {
+				return diag.FromErr(err)
+			}
+		}
+
+		for _, envToRemove := range toRemove {
+			for _, strategy := range envToRemove.Strategies {
+				_, _, err = client.FeatureToggles.DeleteStrategyFromFeature(feature.Project, feature.Name, envToRemove.Name, strategy.ID)
+				if err != nil {
+					return diag.FromErr(err)
+				}
+			}
+			ok, _, err := client.FeatureToggles.EnableFeatureOnEnvironment(feature.Project, feature.Name, envToRemove.Name, false)
+			if err != nil || !ok {
+				return diag.FromErr(err)
+			}
+		}
+
+		for _, envToAdd := range toAdd {
+			for _, strategy := range envToAdd.Strategies {
+				_, resp, err := client.FeatureToggles.AddStrategyToFeature(feature.Project, feature.Name, envToAdd.Name, strategy)
+				if resp == nil {
+					return diag.FromErr(fmt.Errorf("response is nil: %v", err))
+				}
+				if err != nil {
+					return diag.FromErr(err)
+				}
+			}
+			ok, _, err := client.FeatureToggles.EnableFeatureOnEnvironment(feature.Project, feature.Name, envToAdd.Name, envToAdd.Enabled)
+			if err != nil || !ok {
+				return diag.FromErr(err)
+			}
+		}
+
+		readDiags := resourceFeatureV2Read(ctx, d, meta)
+		if readDiags != nil {
+			diags = append(diags, readDiags...)
+		}
+	}
 
 	return diags
 }
 
+func isEnvIn(name string, envs []interface{}) bool {
+	for _, env := range envs {
+		fEnv := toFeatureEnvironment(env.(map[string]interface{}))
+		if fEnv.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func isStratIn(id string, strats []api.FeatureStrategy) bool {
+	for _, strat := range strats {
+		if strat.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
 // Archives a feature
-func resourceFeatureToggleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceFeatureV2Delete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*api.ApiClient)
 
 	var diags diag.Diagnostics
@@ -368,18 +471,25 @@ func toFeatureEnvironment(tfEnvironment map[string]interface{}) api.Environment 
 		strategies := make([]api.FeatureStrategy, 0, len(strategiesList))
 		for _, tfStrategy := range strategiesList {
 			strategyMap := tfStrategy.(map[string]interface{})
-			strategy := api.FeatureStrategy{
-				Name: strategyMap["name"].(string),
-			}
-			if p, ok := strategyMap["parameters"]; ok {
-				tfParams := p.(map[string]interface{})
-				castedParameters := make(map[string]interface{})
-				for k, v := range tfParams {
-					castedParameters[k] = v.(string)
+			name := strategyMap["name"].(string)
+			if len(name) > 0 {
+				strategy := api.FeatureStrategy{
+					Name: name,
 				}
-				strategy.Parameters = castedParameters
+				id := strategyMap["id"].(string) // added now
+				if len(id) > 0 {                 // added now
+					strategy.ID = id
+				}
+				if p, ok := strategyMap["parameters"]; ok {
+					tfParams := p.(map[string]interface{})
+					castedParameters := make(map[string]interface{})
+					for k, v := range tfParams {
+						castedParameters[k] = v.(string)
+					}
+					strategy.Parameters = castedParameters
+				}
+				strategies = append(strategies, strategy)
 			}
-			strategies = append(strategies, strategy)
 		}
 		environment.Strategies = strategies
 	}
