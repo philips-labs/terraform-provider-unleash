@@ -13,9 +13,9 @@ description: |-
 ## Example Usage
 
 ```terraform
-resource "unleash_feature_v2" "strategies_example" {
-  name               = "toggle_strategies"
-  description        = "description"
+resource "unleash_feature_v2" "with_env_strategies" {
+  name               = "my_nice_feature"
+  description        = "manages my nice feature"
   type               = "release"
   project_id         = "default"
   archive_on_destroy = false

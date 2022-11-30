@@ -314,18 +314,18 @@ func resourceFeatureV2Update(ctx context.Context, d *schema.ResourceData, meta i
 	if d.HasChange("environment") {
 		o, a := d.GetChange("environment")
 		old := o.([]interface{})
-		actual := a.([]interface{})
+		new := a.([]interface{})
 
 		toAdd := []api.Environment{}
 		toUpdate := []api.Environment{}
 		toRemove := []api.Environment{}
 
-		for _, actualEnv := range actual {
-			actualFeatureEnv := toFeatureEnvironment(actualEnv.(map[string]interface{}))
-			if isEnvIn(actualFeatureEnv.Name, old) {
-				toUpdate = append(toUpdate, actualFeatureEnv)
+		for _, newEnv := range new {
+			newFeatureEnv := toFeatureEnvironment(newEnv.(map[string]interface{}))
+			if isEnvIn(newFeatureEnv.Name, old) {
+				toUpdate = append(toUpdate, newFeatureEnv)
 			} else {
-				toAdd = append(toAdd, actualFeatureEnv)
+				toAdd = append(toAdd, newFeatureEnv)
 			}
 		}
 
@@ -333,22 +333,22 @@ func resourceFeatureV2Update(ctx context.Context, d *schema.ResourceData, meta i
 		for _, oldEnv := range old {
 			oldFeatureEnv := toFeatureEnvironment(oldEnv.(map[string]interface{}))
 			oldEnvs = append(oldEnvs, oldFeatureEnv)
-			if !isEnvIn(oldFeatureEnv.Name, actual) {
+			if !isEnvIn(oldFeatureEnv.Name, new) {
 				toRemove = append(toRemove, oldFeatureEnv)
 			}
 		}
 
 		for _, envToUpdate := range toUpdate {
-			actualStrats := envToUpdate.Strategies
+			newStrats := envToUpdate.Strategies
 			oldStrats := []api.FeatureStrategy{}
 			for _, oldEnv := range oldEnvs {
 				if envToUpdate.Name == oldEnv.Name {
 					oldStrats = oldEnv.Strategies
 				}
 			}
-			for _, actualStrat := range actualStrats {
-				if isStratIn(actualStrat.ID, oldStrats) {
-					_, resp, err := client.FeatureToggles.UpdateFeatureStrategy(feature.Project, feature.Name, envToUpdate.Name, actualStrat)
+			for _, newStrat := range newStrats {
+				if isStratIn(newStrat.ID, oldStrats) {
+					_, resp, err := client.FeatureToggles.UpdateFeatureStrategy(feature.Project, feature.Name, envToUpdate.Name, newStrat)
 					if resp == nil {
 						return diag.FromErr(fmt.Errorf("response is nil: %v", err))
 					}
@@ -356,7 +356,7 @@ func resourceFeatureV2Update(ctx context.Context, d *schema.ResourceData, meta i
 						return diag.FromErr(err)
 					}
 				} else {
-					_, resp, err := client.FeatureToggles.AddStrategyToFeature(feature.Project, feature.Name, envToUpdate.Name, actualStrat)
+					_, resp, err := client.FeatureToggles.AddStrategyToFeature(feature.Project, feature.Name, envToUpdate.Name, newStrat)
 					if resp == nil {
 						return diag.FromErr(fmt.Errorf("response is nil: %v", err))
 					}
@@ -367,7 +367,7 @@ func resourceFeatureV2Update(ctx context.Context, d *schema.ResourceData, meta i
 			}
 
 			for _, oldStrat := range oldStrats {
-				if !isStratIn(oldStrat.ID, actualStrats) {
+				if !isStratIn(oldStrat.ID, newStrats) {
 					_, _, err = client.FeatureToggles.DeleteStrategyFromFeature(feature.Project, feature.Name, envToUpdate.Name, oldStrat.ID)
 					if err != nil {
 						return diag.FromErr(err)
