@@ -49,6 +49,7 @@ func New(version string) func() *schema.Provider {
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"unleash_feature":             resourceFeature(),
+				"unleash_feature_v2":          resourceFeatureV2(),
 				"unleash_strategy_assignment": resourceStrategyAssignment(),
 				"unleash_feature_enabling":    resourceFeatureEnabling(),
 				"unleash_user":                resourceUser(),

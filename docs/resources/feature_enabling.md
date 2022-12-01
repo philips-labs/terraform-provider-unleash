@@ -61,7 +61,7 @@ resource "unleash_feature_enabling" "example" {
 
 ### Optional
 
-- `enabled` (Boolean) Whether the feature is on/off in the provided environment
+- `enabled` (Boolean) Whether the feature is on/off in the provided environment. Default is `true` (on).
 
 ### Read-Only
 
