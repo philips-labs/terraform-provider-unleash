@@ -13,7 +13,7 @@ import (
 func resourceFeatureV2() *schema.Resource {
 	return &schema.Resource{
 		// This description is used by the documentation generator and the language server.
-		Description: "(Experimental) Provides a resource for managing unleash features with variants and environment strategies.",
+		Description: "(Experimental) Provides a resource for managing unleash features with variants and environment strategies all in a single resource.",
 
 		CreateContext: resourceFeatureV2Create,
 		ReadContext:   resourceFeatureV2Read,
@@ -476,8 +476,8 @@ func toFeatureEnvironment(tfEnvironment map[string]interface{}) api.Environment 
 				strategy := api.FeatureStrategy{
 					Name: name,
 				}
-				id := strategyMap["id"].(string) // added now
-				if len(id) > 0 {                 // added now
+				id := strategyMap["id"].(string)
+				if len(id) > 0 {
 					strategy.ID = id
 				}
 				if p, ok := strategyMap["parameters"]; ok {

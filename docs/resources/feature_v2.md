@@ -3,12 +3,12 @@
 page_title: "unleash_feature_v2 Resource - terraform-provider-unleash"
 subcategory: ""
 description: |-
-  (Experimental) Provides a resource for managing unleash features with variants and environment strategies.
+  (Experimental) Provides a resource for managing unleash features with variants and environment strategies all in a single resource.
 ---
 
 # unleash_feature_v2 (Resource)
 
-(Experimental) Provides a resource for managing unleash features with variants and environment strategies.
+(Experimental) Provides a resource for managing unleash features with variants and environment strategies all in a single resource.
 
 ## Example Usage
 
