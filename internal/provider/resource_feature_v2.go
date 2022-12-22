@@ -69,7 +69,7 @@ func resourceFeatureV2() *schema.Resource {
 						},
 						"strategy": {
 							Description: "Strategy to add in the environment",
-							Type:        schema.TypeSet,
+							Type:        schema.TypeList,
 							Optional:    true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -466,10 +466,9 @@ func toFeatureEnvironment(tfEnvironment map[string]interface{}) api.Environment 
 	environment.Name = tfEnvironment["name"].(string)
 	environment.Enabled = tfEnvironment["enabled"].(bool)
 
-	if tfStrategies, ok := tfEnvironment["strategy"].(*schema.Set); ok && tfStrategies.Len() > 0 {
-		strategiesList := tfStrategies.List()
-		strategies := make([]api.FeatureStrategy, 0, len(strategiesList))
-		for _, tfStrategy := range strategiesList {
+	if tfStrategies, ok := tfEnvironment["strategy"].([]interface{}); ok && len(tfStrategies) > 0 {
+		strategies := make([]api.FeatureStrategy, 0, len(tfStrategies))
+		for _, tfStrategy := range tfStrategies {
 			strategyMap := tfStrategy.(map[string]interface{})
 			name := strategyMap["name"].(string)
 			if len(name) > 0 {
