@@ -25,9 +25,13 @@ resource "unleash_project" "demo" {
 
 ### Required
 
-- `id` (String) The project's id.
 - `name` (String) The project's name.
+- `project_id` (String) The project's id.
 
 ### Optional
 
 - `description` (String) The project's description.
+
+### Read-Only
+
+- `id` (String) The ID of this resource.

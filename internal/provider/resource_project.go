@@ -21,7 +21,7 @@ func resourceProject() *schema.Resource {
 
 		// The descriptions are used by the documentation generator and the language server.
 		Schema: map[string]*schema.Schema{
-			"id": {
+			"project_id": {
 				Description: "The project's id.",
 				Type:        schema.TypeString,
 				Required:    true,
@@ -47,7 +47,7 @@ func resourceProjectCreate(ctx context.Context, d *schema.ResourceData, meta int
 	var diags diag.Diagnostics
 
 	proj := &api.Project{
-		Id:          d.Get("id").(string),
+		Id:          d.Get("project_id").(string),
 		Name:        d.Get("name").(string),
 		Description: d.Get("email").(string),
 	}
