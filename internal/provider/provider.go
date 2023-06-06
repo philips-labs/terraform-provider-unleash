@@ -54,6 +54,7 @@ func New(version string) func() *schema.Provider {
 				"unleash_feature_enabling":    resourceFeatureEnabling(),
 				"unleash_user":                resourceUser(),
 				"unleash_api_token":           resourceApiToken(),
+				"unleash_project":             resourceProject(),
 			},
 		}
 
