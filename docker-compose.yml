@@ -2,7 +2,7 @@
 version: "3.7"
 services:
   unleash:
-    image: unleashorg/unleash-server
+    image: unleashorg/unleash-server:4
     ports:
       - "4242:4242"
     environment:
