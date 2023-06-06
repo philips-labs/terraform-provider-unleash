@@ -63,11 +63,6 @@ func resourceUser() *schema.Resource {
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
-			"id": {
-				Description: "The ID of this resource.",
-				Type:        schema.TypeString,
-				Computed:    true,
-			},
 		},
 	}
 }
@@ -95,7 +90,6 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, meta interf
 		return diag.FromErr(err)
 	}
 
-	_ = d.Set("id", createdUser.Id)
 	_ = d.Set("invite_link", createdUser.InviteLink)
 	_ = d.Set("email_sent", createdUser.EmailSent)
 	d.SetId(strconv.Itoa(createdUser.Id))
