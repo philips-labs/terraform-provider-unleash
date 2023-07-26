@@ -32,6 +32,8 @@ func TestAccResourceFeatureV2(t *testing.T) {
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.parameters.rollout", "68"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.parameters.stickiness", "random"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.parameters.groupId", "toggle"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "tag.0.type", "simple"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "tag.0.value", "value"),
 				),
 			},
 		},
@@ -69,6 +71,10 @@ resource "unleash_feature_v2" "foo" {
 		  groupId    = "toggle"
 		}
 	  }
+	}
+	tag {
+		type = "simple"
+		value = "value"
 	}
   }
 `, utils.RandomString(4))

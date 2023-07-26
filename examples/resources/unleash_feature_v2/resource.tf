@@ -29,4 +29,14 @@ resource "unleash_feature_v2" "with_env_strategies" {
       }
     }
   }
+
+  tag {
+    type  = "simple"
+    value = "foo"
+  }
+
+  tag {
+    type  = "simple"
+    value = "bar"
+  }
 }

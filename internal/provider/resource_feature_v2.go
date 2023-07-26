@@ -168,6 +168,26 @@ func resourceFeatureV2() *schema.Resource {
 					},
 				},
 			},
+			"tag": {
+				Description: "Tag to add to the feature",
+				Type:        schema.TypeList,
+				Optional:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Description: "Tag type. Default is `simple`.",
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "simple",
+						},
+						"value": {
+							Description: "Tag value.",
+							Type:        schema.TypeString,
+							Required:    true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -228,6 +248,19 @@ func resourceFeatureV2Create(ctx context.Context, d *schema.ResourceData, meta i
 			}
 		}
 	}
+	if t, ok := d.GetOk("tag"); ok {
+		tfTags := t.([]interface{})
+		for _, tfTag := range tfTags {
+			tag := toFeatureTag(tfTag.(map[string]interface{}))
+			_, resp, err := client.FeatureTags.CreateFeatureTags(feature.Name, tag)
+			if resp == nil || err != nil {
+				client.FeatureToggles.ArchiveFeature(feature.Project, feature.Name)
+				client.FeatureToggles.DeleteArchivedFeature(feature.Name)
+				return diag.FromErr(err)
+			}
+		}
+
+	}
 
 	d.SetId(createdFeature.Name)
 	readDiags := resourceFeatureV2Read(ctx, d, meta)
@@ -273,6 +306,23 @@ func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta int
 		_ = d.Set("environment", flattenEnvironments(toSave))
 	}
 
+	if t, ok := d.GetOk("tag"); ok {
+		featureTags, _, err := client.FeatureTags.GetAllFeatureTags(feature.Name)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		toSave := []api.FeatureTag{}
+		for _, tfTag := range t.([]interface{}) {
+			for _, tag := range featureTags.Tags {
+				if tfTag.(map[string]interface{})["value"] == tag.Value {
+					toSave = append(toSave, tag)
+				}
+			}
+		}
+
+		_ = d.Set("tag", flattenTags(toSave))
+	}
+
 	return diags
 }
 
@@ -306,6 +356,34 @@ func resourceFeatureV2Update(ctx context.Context, d *schema.ResourceData, meta i
 		if resp == nil {
 			return diag.FromErr(fmt.Errorf("response is nil: %v", err))
 		}
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if d.HasChange("tag") {
+		o, a := d.GetChange("tag")
+		old := o.([]interface{})
+		new := a.([]interface{})
+
+		toAdd := []api.FeatureTag{}
+		toRemove := []api.FeatureTag{}
+
+		for _, newTag := range new {
+			newFeatureTag := toFeatureTag(newTag.(map[string]interface{}))
+			if !isTagIn(newFeatureTag, old) {
+				toAdd = append(toAdd, newFeatureTag)
+			}
+		}
+
+		for _, oldTag := range old {
+			oldFeatureTag := toFeatureTag(oldTag.(map[string]interface{}))
+			if !isTagIn(oldFeatureTag, new) {
+				toRemove = append(toRemove, oldFeatureTag)
+			}
+		}
+
+		_, _, err := client.FeatureTags.UpdateFeatureTags(feature.Name, toAdd, toRemove)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -429,6 +507,16 @@ func isEnvIn(name string, envs []interface{}) bool {
 	return false
 }
 
+func isTagIn(tag api.FeatureTag, tags []interface{}) bool {
+	for _, t := range tags {
+		tfTag := toFeatureTag(t.(map[string]interface{}))
+		if tfTag.Type == tag.Type && tfTag.Value == tag.Value {
+			return true
+		}
+	}
+	return false
+}
+
 func isStratIn(id string, strats []api.FeatureStrategy) bool {
 	for _, strat := range strats {
 		if strat.ID == id {
@@ -528,4 +616,27 @@ func flattenEnvironments(environments []api.Environment) []interface{} {
 	}
 
 	return tfEnvironments
+}
+
+func flattenTags(tags []api.FeatureTag) []interface{} {
+	if tags == nil {
+		return []interface{}{}
+	}
+
+	tfTags := []interface{}{}
+	for _, tag := range tags {
+		tfTag := map[string]interface{}{}
+		tfTag["type"] = tag.Type
+		tfTag["value"] = tag.Value
+
+		tfTags = append(tfTags, tfTag)
+	}
+	return tfTags
+}
+
+func toFeatureTag(tfTag map[string]interface{}) api.FeatureTag {
+	tag := api.FeatureTag{}
+	tag.Type = tfTag["type"].(string)
+	tag.Value = tfTag["value"].(string)
+	return tag
 }

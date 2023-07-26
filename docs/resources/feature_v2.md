@@ -44,6 +44,16 @@ resource "unleash_feature_v2" "with_env_strategies" {
       }
     }
   }
+
+  tag {
+    type  = "simple"
+    value = "foo"
+  }
+
+  tag {
+    type  = "simple"
+    value = "bar"
+  }
 }
 ```
 
@@ -61,6 +71,7 @@ resource "unleash_feature_v2" "with_env_strategies" {
 - `archive_on_destroy` (Boolean) Whether to archive the feature toggle on destroy. Default is `true`. When `false`, it will permanently delete the feature toggle.
 - `description` (String) Feature description
 - `environment` (Block List) Use this to enable a feature in an environment and add strategies (see [below for nested schema](#nestedblock--environment))
+- `tag` (Block List) Tag to add to the feature (see [below for nested schema](#nestedblock--tag))
 - `variant` (Block List) Feature variant (see [below for nested schema](#nestedblock--variant))
 
 ### Read-Only
@@ -77,7 +88,7 @@ Required:
 Optional:
 
 - `enabled` (Boolean) Whether the feature is on/off in the environment. Default is `true` (on)
-- `strategy` (Block Set) Strategy to add in the environment (see [below for nested schema](#nestedblock--environment--strategy))
+- `strategy` (Block List) Strategy to add in the environment (see [below for nested schema](#nestedblock--environment--strategy))
 
 <a id="nestedblock--environment--strategy"></a>
 ### Nested Schema for `environment.strategy`
@@ -94,6 +105,18 @@ Read-Only:
 
 - `id` (String) Strategy ID
 
+
+
+<a id="nestedblock--tag"></a>
+### Nested Schema for `tag`
+
+Required:
+
+- `value` (String) Tag value.
+
+Optional:
+
+- `type` (String) Tag type. Default is `simple`.
 
 
 <a id="nestedblock--variant"></a>
