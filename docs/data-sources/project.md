@@ -28,9 +28,16 @@ data "unleash_project" "example" {
 ### Read-Only
 
 - `description` (String) The description of the unleash project
-- `environments` (Set of String) The list of unleash environments in this project
+- `environments` (List of Object) The list of unleash environments in this project (see [below for nested schema](#nestedatt--environments))
 - `id` (String) The ID of this resource.
 - `name` (String) Project name
 - `updated_at` (String) The date the unleash project was last updated
+
+<a id="nestedatt--environments"></a>
+### Nested Schema for `environments`
+
+Read-Only:
+
+- `environment` (String)
 
 
