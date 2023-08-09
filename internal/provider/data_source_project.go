@@ -39,10 +39,16 @@ func dataSourceProject() *schema.Resource {
 			},
 			"environments": {
 				Description: "The list of unleash environments in this project",
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Computed:    true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"environment": {
+							Description: "The environment name.",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+					},
 				},
 			},
 		},
@@ -65,7 +71,14 @@ func dataSourceProjectRead(ctx context.Context, d *schema.ResourceData, meta int
 	_ = d.Set("name", foundProject.Name)
 	_ = d.Set("description", foundProject.Description)
 	_ = d.Set("updatedAt", foundProject.UpdatedAt)
-	_ = d.Set("environments", foundProject.Environments)
+
+	envs := []interface{}{}
+	for _, env := range foundProject.Environments {
+		tfMap := map[string]interface{}{}
+		tfMap["environment"] = env.Environment
+		envs = append(envs, tfMap)
+	}
+	_ = d.Set("environments", envs)
 
 	return diags
 }
