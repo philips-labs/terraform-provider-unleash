@@ -193,7 +193,7 @@ func resourceFeatureV2() *schema.Resource {
 }
 
 func resourceFeatureV2Create(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -272,7 +272,7 @@ func resourceFeatureV2Create(ctx context.Context, d *schema.ResourceData, meta i
 }
 
 func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -327,7 +327,7 @@ func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta int
 }
 
 func resourceFeatureV2Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -528,7 +528,7 @@ func isStratIn(id string, strats []api.FeatureStrategy) bool {
 
 // Archives a feature
 func resourceFeatureV2Delete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 

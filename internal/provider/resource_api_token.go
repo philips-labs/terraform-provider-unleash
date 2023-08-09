@@ -73,7 +73,7 @@ func resourceApiToken() *schema.Resource {
 }
 
 func resourceApiTokenCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -105,7 +105,7 @@ func resourceApiTokenCreate(ctx context.Context, d *schema.ResourceData, meta in
 }
 
 func resourceApiTokenRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -134,7 +134,7 @@ func resourceApiTokenRead(ctx context.Context, d *schema.ResourceData, meta inte
 }
 
 func resourceApiTokenUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -159,7 +159,7 @@ func resourceApiTokenUpdate(ctx context.Context, d *schema.ResourceData, meta in
 }
 
 func resourceApiTokenDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 

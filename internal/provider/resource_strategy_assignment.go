@@ -63,7 +63,7 @@ func resourceStrategyAssignment() *schema.Resource {
 }
 
 func resourceStrategyAssignmentCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -112,7 +112,7 @@ func resourceStrategyAssignmentCreate(ctx context.Context, d *schema.ResourceDat
 }
 
 func resourceStrategyAssignmentRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -160,7 +160,7 @@ func resourceStrategyAssignmentRead(ctx context.Context, d *schema.ResourceData,
 }
 
 func resourceStrategyAssignmentUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -205,7 +205,7 @@ func resourceStrategyAssignmentUpdate(ctx context.Context, d *schema.ResourceDat
 }
 
 func resourceStrategyAssignmentDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 

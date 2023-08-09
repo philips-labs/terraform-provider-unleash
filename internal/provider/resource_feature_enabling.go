@@ -49,7 +49,7 @@ func resourceFeatureEnabling() *schema.Resource {
 }
 
 func resourceFeatureEnablingCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -73,7 +73,7 @@ func resourceFeatureEnablingCreate(ctx context.Context, d *schema.ResourceData, 
 }
 
 func resourceFeatureEnablingRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -102,7 +102,7 @@ func resourceFeatureEnablingRead(ctx context.Context, d *schema.ResourceData, me
 }
 
 func resourceFeatureEnablingUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -120,7 +120,7 @@ func resourceFeatureEnablingUpdate(ctx context.Context, d *schema.ResourceData, 
 }
 
 func resourceFeatureEnablingDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
