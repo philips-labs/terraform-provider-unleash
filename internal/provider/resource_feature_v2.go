@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	openapiclient "github.com/Unleash/unleash-server-api-go/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -194,19 +193,18 @@ func resourceFeatureV2() *schema.Resource {
 }
 
 func resourceFeatureV2Create(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*ApiClients).UnleashClient
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
-	givenName := d.Get("name").(string)
-	givenDescription := d.Get("description").(string)
-	givenType := d.Get("type").(string)
-	givenProject := d.Get("project_id").(string)
+	feature := &api.FeatureToggle{
+		Name:        d.Get("name").(string),
+		Description: d.Get("description").(string),
+		Type:        d.Get("type").(string),
+		Project:     d.Get("project_id").(string),
+	}
 
-	createFeatureSchema := *openapiclient.NewCreateFeatureSchema(givenName)
-	createFeatureSchema.Description = *openapiclient.NewNullableString(&givenDescription)
-	createFeatureSchema.Type = &givenType
-	createdFeature, resp, err := client.FeaturesApi.CreateFeature(ctx, givenProject).CreateFeatureSchema(createFeatureSchema).Execute()
+	createdFeature, resp, err := client.FeatureToggles.CreateFeature(feature.Project, *feature)
 	if resp == nil {
 		return diag.FromErr(fmt.Errorf("response is nil: %v", err))
 	}
@@ -216,14 +214,14 @@ func resourceFeatureV2Create(ctx context.Context, d *schema.ResourceData, meta i
 
 	if v, ok := d.GetOk("variant"); ok {
 		tfVariants := v.([]interface{})
-		variants := make([]openapiclient.VariantSchema, 0, len(tfVariants))
+		variants := make([]api.Variant, 0, len(tfVariants))
 		for _, tfVariant := range tfVariants {
-			variants = append(variants, toOpenApiFeatureVariant(tfVariant.(map[string]interface{})))
+			variants = append(variants, toFeatureVariant(tfVariant.(map[string]interface{})))
 		}
-		_, resp, err := client.FeaturesApi.OverwriteFeatureVariants(ctx, givenProject, givenName).VariantSchema(variants).Execute()
+		_, resp, err := client.Variants.AddVariantsForFeatureToggle(feature.Project, feature.Name, variants)
 		if resp == nil || err != nil {
-			client.FeaturesApi.ArchiveFeature(ctx, givenProject, givenName).Execute()
-			client.ArchiveApi.DeleteFeature(ctx, givenName).Execute()
+			client.FeatureToggles.ArchiveFeature(feature.Project, feature.Name)
+			client.FeatureToggles.DeleteArchivedFeature(feature.Name)
 			return diag.FromErr(err)
 		}
 	}
@@ -231,44 +229,33 @@ func resourceFeatureV2Create(ctx context.Context, d *schema.ResourceData, meta i
 	if e, ok := d.GetOk("environment"); ok {
 		tfEnvironments := e.([]interface{})
 		for _, tfEnvironment := range tfEnvironments {
-			environment := toOpenApiFeatureEnvironment(tfEnvironment.(map[string]interface{}))
+			environment := toFeatureEnvironment(tfEnvironment.(map[string]interface{}))
 
 			for _, strategy := range environment.Strategies {
-				create := *openapiclient.NewCreateFeatureStrategySchema(strategy.Name)
-				create.Parameters = strategy.Parameters
-				_, resp, err := client.FeaturesApi.AddFeatureStrategy(ctx, givenProject, givenName, environment.Name).CreateFeatureStrategySchema(create).Execute()
+				_, resp, err := client.FeatureToggles.AddStrategyToFeature(feature.Project, feature.Name, environment.Name, strategy)
 				if resp == nil || err != nil {
-					client.FeaturesApi.ArchiveFeature(ctx, givenProject, givenName).Execute()
-					client.ArchiveApi.DeleteFeature(ctx, givenName).Execute()
+					client.FeatureToggles.ArchiveFeature(feature.Project, feature.Name)
+					client.FeatureToggles.DeleteArchivedFeature(feature.Name)
 					return diag.FromErr(err)
 				}
 
 			}
-			if environment.Enabled {
-				_, _, err := client.FeaturesApi.ToggleFeatureEnvironmentOn(ctx, givenProject, givenName, environment.Name).Execute()
-				if err != nil {
-					client.FeaturesApi.ArchiveFeature(ctx, givenProject, givenName).Execute()
-					client.ArchiveApi.DeleteFeature(ctx, givenName).Execute()
-					return diag.FromErr(err)
-				}
-			} else {
-				_, _, err := client.FeaturesApi.ToggleFeatureEnvironmentOff(ctx, givenProject, givenName, environment.Name).Execute()
-				if err != nil {
-					client.FeaturesApi.ArchiveFeature(ctx, givenProject, givenName).Execute()
-					client.ArchiveApi.DeleteFeature(ctx, givenName).Execute()
-					return diag.FromErr(err)
-				}
+			ok, _, err := client.FeatureToggles.EnableFeatureOnEnvironment(feature.Project, feature.Name, environment.Name, environment.Enabled)
+			if err != nil || !ok {
+				client.FeatureToggles.ArchiveFeature(feature.Project, feature.Name)
+				client.FeatureToggles.DeleteArchivedFeature(feature.Name)
+				return diag.FromErr(err)
 			}
 		}
 	}
 	if t, ok := d.GetOk("tag"); ok {
 		tfTags := t.([]interface{})
 		for _, tfTag := range tfTags {
-			tag := toOpenApiFeatureTag(tfTag.(map[string]interface{}))
-			_, resp, err := client.FeaturesApi.AddTag(ctx, givenName).TagSchema(tag).Execute()
+			tag := toFeatureTag(tfTag.(map[string]interface{}))
+			_, resp, err := client.FeatureTags.CreateFeatureTags(feature.Name, tag)
 			if resp == nil || err != nil {
-				client.FeaturesApi.ArchiveFeature(ctx, givenProject, givenName).Execute()
-				client.ArchiveApi.DeleteFeature(ctx, givenName).Execute()
+				client.FeatureToggles.ArchiveFeature(feature.Project, feature.Name)
+				client.FeatureToggles.DeleteArchivedFeature(feature.Name)
 				return diag.FromErr(err)
 			}
 		}
@@ -562,39 +549,6 @@ func resourceFeatureV2Delete(ctx context.Context, d *schema.ResourceData, meta i
 	return diags
 }
 
-func toOpenApiFeatureEnvironment(tfEnvironment map[string]interface{}) openapiclient.FeatureEnvironmentSchema {
-	name := tfEnvironment["name"].(string)
-	enabled := tfEnvironment["enabled"].(bool)
-
-	e := *openapiclient.NewFeatureEnvironmentSchema(name, enabled)
-
-	if tfStrategies, ok := tfEnvironment["strategy"].([]interface{}); ok && len(tfStrategies) > 0 {
-		strategies := make([]openapiclient.FeatureStrategySchema, 0, len(tfStrategies))
-		for _, tfStrategy := range tfStrategies {
-			strategyMap := tfStrategy.(map[string]interface{})
-			name := strategyMap["name"].(string)
-			if len(name) > 0 {
-				strategy := *openapiclient.NewFeatureStrategySchema(name)
-				id := strategyMap["id"].(string)
-				if len(id) > 0 {
-					strategy.Id = &id
-				}
-				if p, ok := strategyMap["parameters"]; ok {
-					tfParams := p.(map[string]interface{})
-					castedParameters := make(map[string]string)
-					for k, v := range tfParams {
-						castedParameters[k] = v.(string)
-					}
-					strategy.Parameters = &castedParameters
-				}
-				strategies = append(strategies, strategy)
-			}
-		}
-		e.Strategies = strategies
-	}
-	return e
-}
-
 func toFeatureEnvironment(tfEnvironment map[string]interface{}) api.Environment {
 	environment := api.Environment{}
 	environment.Name = tfEnvironment["name"].(string)
@@ -685,8 +639,4 @@ func toFeatureTag(tfTag map[string]interface{}) api.FeatureTag {
 	tag.Type = tfTag["type"].(string)
 	tag.Value = tfTag["value"].(string)
 	return tag
-}
-
-func toOpenApiFeatureTag(tfTag map[string]interface{}) openapiclient.TagSchema {
-	return *openapiclient.NewTagSchema(tfTag["value"].(string), tfTag["type"].(string))
 }

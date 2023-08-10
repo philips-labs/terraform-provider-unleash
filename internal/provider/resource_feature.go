@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	openapiclient "github.com/Unleash/unleash-server-api-go/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -261,35 +260,6 @@ func toStringArray(iArr []interface{}) []string {
 		stringArr[i] = v.(string)
 	}
 	return stringArr
-}
-
-func toOpenApiFeatureVariant(tfVariant map[string]interface{}) openapiclient.VariantSchema {
-	name := tfVariant["name"].(string)
-	weight := float32(tfVariant["weight"].(int))
-	stickiness := tfVariant["stickiness"].(string)
-	weightType := tfVariant["weight_type"].(string)
-
-	v := *openapiclient.NewVariantSchema(name, weight)
-	v.Stickiness = &stickiness
-	v.WeightType = &weightType
-
-	if payloadSet, ok := tfVariant["payload"].(*schema.Set); ok && payloadSet.Len() > 0 {
-		payloadList := payloadSet.List()
-		payloadMap := payloadList[0].(map[string]interface{})
-		v.Payload = openapiclient.NewVariantSchemaPayload(payloadMap["type"].(string), payloadMap["value"].(string))
-	}
-
-	if overridesSet, ok := tfVariant["overrides"].(*schema.Set); ok && overridesSet.Len() > 0 {
-		overridesList := overridesSet.List()
-		overrides := make([]openapiclient.OverrideSchema, 0, len(overridesList))
-		for _, tfOverride := range overridesList {
-			overrideMap := tfOverride.(map[string]interface{})
-			override := *openapiclient.NewOverrideSchema(overrideMap["context_name"].(string), toStringArray(overrideMap["values"].([]interface{})))
-			overrides = append(overrides, override)
-		}
-		v.Overrides = overrides
-	}
-	return v
 }
 
 func toFeatureVariant(tfVariant map[string]interface{}) api.Variant {
