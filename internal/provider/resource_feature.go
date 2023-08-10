@@ -126,7 +126,7 @@ func resourceFeature() *schema.Resource {
 }
 
 func resourceFeatureCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -170,7 +170,7 @@ func resourceFeatureCreate(ctx context.Context, d *schema.ResourceData, meta int
 }
 
 func resourceFeatureRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -194,7 +194,7 @@ func resourceFeatureRead(ctx context.Context, d *schema.ResourceData, meta inter
 }
 
 func resourceFeatureUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
@@ -233,7 +233,7 @@ func resourceFeatureUpdate(ctx context.Context, d *schema.ResourceData, meta int
 
 // Archives a feature
 func resourceFeatureDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 

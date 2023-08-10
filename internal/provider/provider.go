@@ -3,7 +3,9 @@ package provider
 import (
 	"context"
 	"net/http"
+	"strings"
 
+	openapiclient "github.com/Unleash/unleash-server-api-go/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/philips-labs/go-unleash-api/api"
@@ -67,11 +69,29 @@ func configure(version string, p *schema.Provider) func(ctx context.Context, d *
 	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		var diags diag.Diagnostics
 
-		apiClient, err := api.NewClient(&http.Client{}, d.Get("api_url").(string), d.Get("auth_token").(string))
+		apiUrl := d.Get("api_url").(string)
+		apiToken := d.Get("auth_token").(string)
+		apiClient, err := api.NewClient(&http.Client{}, apiUrl, apiToken)
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}
 
-		return apiClient, diags
+		unleashConfig := openapiclient.NewConfiguration()
+		unleashConfig.Servers = openapiclient.ServerConfigurations{
+			openapiclient.ServerConfiguration{
+				URL:         strings.Replace(apiUrl, "/api", "", 1),
+				Description: "Unleash server",
+			},
+		}
+		unleashConfig.AddDefaultHeader("Authorization", apiToken)
+
+		unleashClient := openapiclient.NewAPIClient(unleashConfig)
+
+		clients := &ApiClients{
+			PhilipsUnleashClient: apiClient,
+			UnleashClient:        unleashClient,
+		}
+
+		return clients, diags
 	}
 }

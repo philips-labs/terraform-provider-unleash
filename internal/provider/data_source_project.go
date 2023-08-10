@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/philips-labs/go-unleash-api/api"
 )
 
 func dataSourceProject() *schema.Resource {
@@ -56,7 +55,7 @@ func dataSourceProject() *schema.Resource {
 }
 
 func dataSourceProjectRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 

@@ -6,10 +6,10 @@ import (
 	"regexp"
 	"strconv"
 
+	openapiclient "github.com/Unleash/unleash-server-api-go/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/philips-labs/go-unleash-api/api"
 )
 
 func resourceUser() *schema.Resource {
@@ -68,21 +68,25 @@ func resourceUser() *schema.Resource {
 }
 
 func resourceUserCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).UnleashClient
 
 	var diags diag.Diagnostics
 
 	givenUserRole := d.Get("root_role").(string)
-	roleId := rolesLookup[givenUserRole]
-	user := &api.User{
-		Name:      d.Get("name").(string),
-		Email:     d.Get("email").(string),
-		Username:  d.Get("username").(string),
-		RootRole:  roleId,
-		SendEmail: d.Get("send_email").(bool),
-	}
+	roleId := int32(rolesLookup[givenUserRole])
+	givenName := d.Get("name").(string)
+	givenEmail := d.Get("email").(string)
+	givenUsername := d.Get("username").(string)
+	givenSendEmail := d.Get("send_email").(bool)
 
-	createdUser, resp, err := client.Users.CreateUser(*user)
+	createUserSchema := *openapiclient.NewCreateUserSchemaWithDefaults()
+	createUserSchema.Name = &givenName
+	createUserSchema.Email = &givenEmail
+	createUserSchema.Username = &givenUsername
+	createUserSchema.SendEmail = &givenSendEmail
+	createUserSchema.RootRole = openapiclient.Int32AsCreateUserSchemaRootRole(&roleId)
+
+	createdUser, resp, err := client.UsersApi.CreateUser(ctx).CreateUserSchema(createUserSchema).Execute()
 	if resp == nil {
 		return diag.FromErr(fmt.Errorf("response is nil: %v", err))
 	}
@@ -92,7 +96,7 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, meta interf
 
 	_ = d.Set("invite_link", createdUser.InviteLink)
 	_ = d.Set("email_sent", createdUser.EmailSent)
-	d.SetId(strconv.Itoa(createdUser.Id))
+	d.SetId(strconv.Itoa(int(createdUser.Id)))
 	readDiags := resourceUserRead(ctx, d, meta)
 	if readDiags != nil {
 		diags = append(diags, readDiags...)
@@ -102,14 +106,14 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, meta interf
 }
 
 func resourceUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).UnleashClient
 
 	var diags diag.Diagnostics
 
 	userId := d.Id()
-	user, _, err := client.Users.GetUserById(userId)
+	user, resp, err := client.UsersApi.GetUser(ctx, userId).Execute()
 	if err != nil {
-		if err == api.ErrNotFound {
+		if resp.StatusCode == 404 {
 			d.SetId("")
 			return diags
 		}
@@ -120,7 +124,7 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	_ = d.Set("email", user.Email)
 
 	for k, v := range rolesLookup {
-		if v == user.RootRole {
+		if int32(v) == *user.RootRole {
 			_ = d.Set("root_role", k)
 		}
 	}
@@ -129,22 +133,24 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, meta interfac
 }
 
 func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).UnleashClient
 
 	var diags diag.Diagnostics
 
 	givenUserRole := d.Get("root_role").(string)
-	roleId := rolesLookup[givenUserRole]
-	user := &api.User{
-		Name:      d.Get("name").(string),
-		Email:     d.Get("email").(string),
-		Username:  d.Get("username").(string),
-		RootRole:  roleId,
-		SendEmail: d.Get("send_email").(bool),
+	roleId := int32(rolesLookup[givenUserRole])
+	givenName := d.Get("name").(string)
+	givenEmail := d.Get("email").(string)
+	rootRole := openapiclient.Int32AsCreateUserSchemaRootRole(&roleId)
+
+	requestBody := map[string]interface{}{
+		"name":     &givenName,
+		"email":    &givenEmail,
+		"rootRole": &rootRole,
 	}
 
 	userId := d.Id()
-	_, resp, err := client.Users.UpdateUser(userId, *user)
+	_, resp, err := client.UsersApi.UpdateUser(ctx, userId).RequestBody(requestBody).Execute()
 	if resp == nil {
 		return diag.FromErr(fmt.Errorf("response is nil: %v", err))
 	}
@@ -156,12 +162,12 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, meta interf
 }
 
 func resourceUserDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).UnleashClient
 
 	var diags diag.Diagnostics
 
 	userId := d.Id()
-	_, _, err := client.Users.DeleteUser(userId)
+	_, err := client.UsersApi.DeleteUser(ctx, userId).Execute()
 	if err != nil {
 		return diag.FromErr(err)
 	}

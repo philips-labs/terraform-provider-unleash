@@ -79,7 +79,7 @@ func dataSourceApiTokens() *schema.Resource {
 }
 
 func dataSourceApiTokensRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
+	client := meta.(*ApiClients).PhilipsUnleashClient
 
 	var diags diag.Diagnostics
 
