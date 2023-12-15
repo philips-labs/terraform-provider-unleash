@@ -34,6 +34,18 @@ resource "unleash_feature_v2" "with_env_strategies" {
       parameters = {
         IPs = "189.434.777.123,host.test.com"
       }
+      constraint {
+        context_name     = "appName"
+        operator         = "SEMVER_EQ"
+        case_insensitive = false
+        inverted         = false
+        value            = "1.0.0"
+      }
+      constraint {
+        context_name = "appName"
+        operator     = "IN"
+        values       = ["foo", "bar"]
+      }
     }
     strategy {
       name = "flexibleRollout"
@@ -99,11 +111,28 @@ Required:
 
 Optional:
 
+- `constraint` (Block List) Strategy constraint (see [below for nested schema](#nestedblock--environment--strategy--constraint))
 - `parameters` (Map of String) Strategy parameters. All the values need to informed as strings.
 
 Read-Only:
 
 - `id` (String) Strategy ID
+
+<a id="nestedblock--environment--strategy--constraint"></a>
+### Nested Schema for `environment.strategy.constraint`
+
+Required:
+
+- `context_name` (String) Constraint context. Can be `appName`, `currentTime`, `environment`, `sessionId` or `userId`
+- `operator` (String) Constraint operator. Can be `IN`, `NOT_IN`, `STR_CONTAINS`, `STR_STARTS_WITH`, `STR_ENDS_WITH`, `NUM_EQ`, `NUM_GT`, `NUM_GTE`, `NUM_LT`, `NUM_LTE`, `SEMVER_EQ`, `SEMVER_GT` or `SEMVER_LT`
+
+Optional:
+
+- `case_insensitive` (Boolean) If operator is case-insensitive.
+- `inverted` (Boolean) If constraint expressions will be negated, meaning that they get their opposite value.
+- `value` (String) Value to use in the evaluation of the constraint. Applies only to `DATE_`, `NUM_` and `SEMVER_` operators.
+- `values` (List of String) List of values to use in the evaluation of the constraint. Applies to all operators, except `DATE_`, `NUM_` and `SEMVER_`.
+
 
 
 

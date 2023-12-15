@@ -19,6 +19,18 @@ resource "unleash_feature_v2" "with_env_strategies" {
       parameters = {
         IPs = "189.434.777.123,host.test.com"
       }
+      constraint {
+        context_name     = "appName"
+        operator         = "SEMVER_EQ"
+        case_insensitive = false
+        inverted         = false
+        value            = "1.0.0"
+      }
+      constraint {
+        context_name = "appName"
+        operator     = "IN"
+        values       = ["foo", "bar"]
+      }
     }
     strategy {
       name = "flexibleRollout"

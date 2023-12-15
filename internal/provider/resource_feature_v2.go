@@ -86,6 +86,52 @@ func resourceFeatureV2() *schema.Resource {
 											Type: schema.TypeString,
 										},
 									},
+									"constraint": {
+										Description: "Strategy constraint",
+										Type:        schema.TypeList,
+										Optional:    true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"context_name": {
+													Description:  "Constraint context. Can be `appName`, `currentTime`, `environment`, `sessionId` or `userId`",
+													Type:         schema.TypeString,
+													Required:     true,
+													ValidateFunc: validation.StringInSlice([]string{"appName", "currentTime", "environment", "sessionId", "userId"}, false),
+												},
+												"operator": {
+													Description:  "Constraint operator. Can be `IN`, `NOT_IN`, `STR_CONTAINS`, `STR_STARTS_WITH`, `STR_ENDS_WITH`, `NUM_EQ`, `NUM_GT`, `NUM_GTE`, `NUM_LT`, `NUM_LTE`, `SEMVER_EQ`, `SEMVER_GT` or `SEMVER_LT`",
+													Type:         schema.TypeString,
+													Required:     true,
+													ValidateFunc: validation.StringInSlice([]string{"IN", "NOT_IN", "STR_CONTAINS", "STR_STARTS_WITH", "STR_ENDS_WITH", "NUM_EQ", "NUM_GT", "NUM_GTE", "NUM_LT", "NUM_LTE", "SEMVER_EQ", "SEMVER_GT", "SEMVER_LT"}, false),
+												},
+												"value": {
+													Description: "Value to use in the evaluation of the constraint. Applies only to `DATE_`, `NUM_` and `SEMVER_` operators.",
+													Type:        schema.TypeString,
+													Optional:    true,
+												},
+												"values": {
+													Description: "List of values to use in the evaluation of the constraint. Applies to all operators, except `DATE_`, `NUM_` and `SEMVER_`.",
+													Type:        schema.TypeList,
+													Optional:    true,
+													Elem: &schema.Schema{
+														Type: schema.TypeString,
+													},
+												},
+												"case_insensitive": {
+													Description: "If operator is case-insensitive.",
+													Type:        schema.TypeBool,
+													Optional:    true,
+													Default:     false,
+												},
+												"inverted": {
+													Description: "If constraint expressions will be negated, meaning that they get their opposite value.",
+													Type:        schema.TypeBool,
+													Optional:    true,
+													Default:     false,
+												},
+											},
+										},
+									},
 									"id": {
 										Description: "Strategy ID",
 										Type:        schema.TypeString,
@@ -575,6 +621,22 @@ func toFeatureEnvironment(tfEnvironment map[string]interface{}) api.Environment 
 					}
 					strategy.Parameters = castedParameters
 				}
+				if tfConstraints, ok := strategyMap["constraint"].([]interface{}); ok && len(tfConstraints) > 0 {
+					constraints := make([]api.StrategyConstraint, 0, len(tfConstraints))
+					for _, tfConstraint := range tfConstraints {
+						constraintMap := tfConstraint.(map[string]interface{})
+						constraint := api.StrategyConstraint{
+							ContextName:     constraintMap["context_name"].(string),
+							Operator:        constraintMap["operator"].(string),
+							Value:           constraintMap["value"].(string),
+							Values:          toStringArray(constraintMap["values"].([]interface{})),
+							Inverted:        constraintMap["inverted"].(bool),
+							CaseInsensitive: constraintMap["case_insensitive"].(bool),
+						}
+						constraints = append(constraints, constraint)
+					}
+					strategy.Constraints = constraints
+				}
 				strategies = append(strategies, strategy)
 			}
 		}
@@ -607,6 +669,20 @@ func flattenEnvironments(environments []api.Environment) []interface{} {
 					castedParams[k] = v.(string)
 				}
 				tfStrategy["parameters"] = castedParams
+				if strategy.Constraints != nil {
+					tfConstraints := []interface{}{}
+					for _, constraint := range strategy.Constraints {
+						tfConstraint := map[string]interface{}{}
+						tfConstraint["context_name"] = constraint.ContextName
+						tfConstraint["operator"] = constraint.Operator
+						tfConstraint["value"] = constraint.Value
+						tfConstraint["values"] = constraint.Values
+						tfConstraint["inverted"] = constraint.Inverted
+						tfConstraint["case_insensitive"] = constraint.CaseInsensitive
+						tfConstraints = append(tfConstraints, tfConstraint)
+					}
+					tfStrategy["constraint"] = tfConstraints
+				}
 				tfStrategies = append(tfStrategies, tfStrategy)
 			}
 			tfEnvironment["strategy"] = tfStrategies
