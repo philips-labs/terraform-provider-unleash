@@ -123,15 +123,15 @@ Read-Only:
 
 Required:
 
-- `context_name` (String) Constraint context.
-- `operator` (String) Constraint operator.
+- `context_name` (String) Constraint context. Can be `appName`, `currentTime`, `environment`, `sessionId` or `userId`
+- `operator` (String) Constraint operator. Can be `IN`, `NOT_IN`, `STR_CONTAINS`, `STR_STARTS_WITH`, `STR_ENDS_WITH`, `NUM_EQ`, `NUM_GT`, `NUM_GTE`, `NUM_LT`, `NUM_LTE`, `SEMVER_EQ`, `SEMVER_GT` or `SEMVER_LT`
 
 Optional:
 
 - `case_insensitive` (Boolean) If operator is case-insensitive.
 - `inverted` (Boolean) If constraint expressions will be negated, meaning that they get their opposite value.
-- `value` (String) Value to use in the evaluation of the constraint. Applies to `DATE_`, `NUM_` and `SEMVER_` operators.
-- `values` (List of String) List of values to use in the evaluation of the constraint.
+- `value` (String) Value to use in the evaluation of the constraint. Applies only to `DATE_`, `NUM_` and `SEMVER_` operators.
+- `values` (List of String) List of values to use in the evaluation of the constraint. Applies to all operators, except `DATE_`, `NUM_` and `SEMVER_`.
 
 
 

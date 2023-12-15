@@ -93,24 +93,24 @@ func resourceFeatureV2() *schema.Resource {
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"context_name": {
-													Description:  "Constraint context.",
+													Description:  "Constraint context. Can be `appName`, `currentTime`, `environment`, `sessionId` or `userId`",
 													Type:         schema.TypeString,
 													Required:     true,
 													ValidateFunc: validation.StringInSlice([]string{"appName", "currentTime", "environment", "sessionId", "userId"}, false),
 												},
 												"operator": {
-													Description:  "Constraint operator.",
+													Description:  "Constraint operator. Can be `IN`, `NOT_IN`, `STR_CONTAINS`, `STR_STARTS_WITH`, `STR_ENDS_WITH`, `NUM_EQ`, `NUM_GT`, `NUM_GTE`, `NUM_LT`, `NUM_LTE`, `SEMVER_EQ`, `SEMVER_GT` or `SEMVER_LT`",
 													Type:         schema.TypeString,
 													Required:     true,
 													ValidateFunc: validation.StringInSlice([]string{"IN", "NOT_IN", "STR_CONTAINS", "STR_STARTS_WITH", "STR_ENDS_WITH", "NUM_EQ", "NUM_GT", "NUM_GTE", "NUM_LT", "NUM_LTE", "SEMVER_EQ", "SEMVER_GT", "SEMVER_LT"}, false),
 												},
 												"value": {
-													Description: "Value to use in the evaluation of the constraint. Applies to `DATE_`, `NUM_` and `SEMVER_` operators.",
+													Description: "Value to use in the evaluation of the constraint. Applies only to `DATE_`, `NUM_` and `SEMVER_` operators.",
 													Type:        schema.TypeString,
 													Optional:    true,
 												},
 												"values": {
-													Description: "List of values to use in the evaluation of the constraint.",
+													Description: "List of values to use in the evaluation of the constraint. Applies to all operators, except `DATE_`, `NUM_` and `SEMVER_`.",
 													Type:        schema.TypeList,
 													Optional:    true,
 													Elem: &schema.Schema{
