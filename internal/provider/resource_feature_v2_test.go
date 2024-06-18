@@ -32,6 +32,11 @@ func TestAccResourceFeatureV2(t *testing.T) {
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.parameters.rollout", "68"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.parameters.stickiness", "random"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.parameters.groupId", "toggle"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.0.context_name", "appName"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.0.operator", "NUM_EQ"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.0.case_insensitive", "false"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.0.inverted", "false"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.0.value", "1"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "tag.0.type", "simple"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "tag.0.value", "value"),
 				),
@@ -65,6 +70,13 @@ resource "unleash_feature_v2" "foo" {
 	  }
 	  strategy {
 		name = "flexibleRollout"
+		constraint {
+			context_name = "appName"
+			operator = "NUM_EQ"
+			case_insensitive = false
+			inverted = false
+			value = "1"
+		}
 		parameters = {
 		  rollout    = "68"
 		  stickiness = "random"
