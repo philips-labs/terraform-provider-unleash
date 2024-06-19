@@ -12,8 +12,8 @@ github.com/Masterminds/sprig/v3 v3.2.3/go.mod h1:rXcFaZ2zZbLRJv/xSysmlgIM1u11eBa
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/ProtonMail/go-crypto v1.1.0-alpha.2 h1:bkyFVUP+ROOARdgCiJzNQo2V2kiB97LyUpzH9P6Hrlg=
 github.com/ProtonMail/go-crypto v1.1.0-alpha.2/go.mod h1:rA3QumHc/FZ8pAHreoekgiAbzpNsfQAosU5td4SnOrE=
-github.com/Unleash/unleash-server-api-go v0.2.2 h1:BXJHG+OI/5i0mhB441WiKJ/ZCYNWkxHvDiMcJKXlvr4=
-github.com/Unleash/unleash-server-api-go v0.2.2/go.mod h1:w0ZJ50HuUBS50Wn8I8TYW8RPcR5vqSbRCa9DcRgVNvw=
+github.com/Unleash/unleash-server-api-go v0.2.9 h1:IfMQZBhhZy9voRoZo6w5vOqY16rsNMoQIkG+DwfZyMk=
+github.com/Unleash/unleash-server-api-go v0.2.9/go.mod h1:w0ZJ50HuUBS50Wn8I8TYW8RPcR5vqSbRCa9DcRgVNvw=
 github.com/agext/levenshtein v1.2.2 h1:0S/Yg6LYmFJ5stwQeRp6EeOcCbj7xiqQSdNelsXvaqE=
 github.com/agext/levenshtein v1.2.2/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
 github.com/apparentlymart/go-textseg/v12 v12.0.0/go.mod h1:S/4uRK2UtaQttw1GenVJEynmyUenKwP++x/+DdGV/Ec=
