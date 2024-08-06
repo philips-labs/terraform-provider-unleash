@@ -3,16 +3,16 @@ on:
   pull_request:
     branches: [main]
     paths-ignore:
-      - 'README.md'
+      - "README.md"
   push:
     branches: [main]
     paths-ignore:
-      - 'README.md'
-  # The Unleash API could drift unexpectedly (like most SaaS systems, etc.), so its recommended testing 
-  # at a regular interval not necessarily tied to code changes. This will 
+      - "README.md"
+  # The Unleash API could drift unexpectedly (like most SaaS systems, etc.), so its recommended testing
+  # at a regular interval not necessarily tied to code changes. This will
   # ensure we are alerted to something breaking due to an API change, even if the code did not change.
   schedule:
-    - cron: '0 13 * * *'
+    - cron: "0 13 * * *"
 jobs:
   # ensure at least the code builds...
   build:
@@ -20,23 +20,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.18
+        id: go
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: 1.18
-      id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
 
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
+      - name: Get dependencies
+        run: |
+          go mod download
 
-    - name: Get dependencies
-      run: |
-        go mod download
-
-    - name: Build
-      run: |
-        go build -v .
+      - name: Build
+        run: |
+          go build -v .
 
   # run acceptance tests in a matrix with Terraform core versions
   test:
@@ -49,36 +48,35 @@ jobs:
       matrix:
         # list whatever Terraform versions here you would like to support
         terraform:
-          - '1.0.7'
+          - "1.0.7"
     steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.18
+        id: go
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: 1.18
-      id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
 
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
+      - name: Start containers
+        run: docker compose up -d
 
-    - name: Start containers
-      run: docker-compose up -d
+      - name: Get dependencies
+        run: |
+          go mod download
 
-    - name: Get dependencies
-      run: |
-        go mod download
-        
-    - name: TF acceptance tests
-      timeout-minutes: 10
-      env:
-        TF_ACC: "1"
-        TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform }}
-        UNLEASH_API_URL: http://localhost:4242/api/
-        UNLEASH_AUTH_TOKEN: token
+      - name: TF acceptance tests
+        timeout-minutes: 10
+        env:
+          TF_ACC: "1"
+          TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform }}
+          UNLEASH_API_URL: http://localhost:4242/api/
+          UNLEASH_AUTH_TOKEN: token
 
-      run: |
-        go test -v -cover ./internal/provider/
+        run: |
+          go test -v -cover ./internal/provider/
 
-    - name: Stop containers
-      if: always()
-      run: docker-compose down
+      - name: Stop containers
+        if: always()
+        run: docker compose down

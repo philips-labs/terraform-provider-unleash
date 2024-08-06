@@ -32,7 +32,7 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 
 *Note:* Acceptance tests create real resources, so it requires access to a Unleash server.
 
-You can run the Unleash server locally using Docker, run `docker-compose up -d`
+You can run the Unleash server locally using Docker, run `docker compose up -d`
 
 Then, run:
 
