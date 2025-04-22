@@ -152,13 +152,19 @@ func resourceApiTokenUpdate(ctx context.Context, d *schema.ResourceData, meta in
 	var diags diag.Diagnostics
 
 	expiresAt := d.Get("expires_at").(string)
-	parsedExpiresAt, parseErr := time.Parse(time.RFC3339, expiresAt)
-	if parseErr != nil {
-		return diag.FromErr(parseErr)
+	var parsedExpiresAt time.Time
+	if expiresAt != "" {
+		var parseErr error
+		parsedExpiresAt, parseErr = time.Parse(time.RFC3339, expiresAt)
+		if parseErr != nil {
+			return diag.FromErr(parseErr)
+		}
 	}
 
 	updateApiTokenSchema := *openapiclient.NewUpdateApiTokenSchemaWithDefaults()
-	updateApiTokenSchema.ExpiresAt = parsedExpiresAt
+	if !parsedExpiresAt.IsZero() {
+		updateApiTokenSchema.ExpiresAt = parsedExpiresAt
+	}
 	tokenSecret := d.Get("secret").(string)
 	resp, err := client.APITokensAPI.UpdateApiToken(ctx, tokenSecret).UpdateApiTokenSchema(updateApiTokenSchema).Execute()
 	if resp == nil {
