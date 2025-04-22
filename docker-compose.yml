@@ -1,5 +1,4 @@
 # unleash server and db used for local testing / acceptance tests
-version: "3.7"
 services:
   unleash:
     image: unleashorg/unleash-server

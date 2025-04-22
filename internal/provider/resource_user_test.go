@@ -19,7 +19,6 @@ func TestAccResourceUser(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr("unleash_user.foo", "name", regexp.MustCompile("^bar")),
 					resource.TestMatchResourceAttr("unleash_user.foo", "email", regexp.MustCompile("^foo.+@foo.com.br$")),
-					resource.TestMatchResourceAttr("unleash_user.foo", "username", regexp.MustCompile("^xyz")),
 					resource.TestMatchResourceAttr("unleash_user.foo", "root_role", regexp.MustCompile("^Admin$")),
 				),
 			},
@@ -31,7 +30,6 @@ var testAccResourceUser = fmt.Sprintf(`
 resource "unleash_user" "foo" {
   name = "bar"
   email = "foo%s@foo.com.br"
-  username = "xyz%s"
   root_role = "Admin"
 }
-`, utils.RandomString(4), utils.RandomString(4))
+`, utils.RandomString(4))
