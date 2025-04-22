@@ -44,5 +44,3 @@ Read-Only:
 
 - `enabled` (Boolean)
 - `name` (String)
-
-

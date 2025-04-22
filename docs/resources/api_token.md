@@ -15,9 +15,9 @@ Provides a resource for managing unleash api tokens.
 ```terraform
 resource "unleash_api_token" "my_token" {
   username    = "bobjoe"
-  type        = "admin"
+  type        = "client"
   expires_at  = "2024-10-19"
-  environment = "*"
+  environment = "development"
   projects    = ["*"]
 }
 ```
@@ -28,12 +28,12 @@ resource "unleash_api_token" "my_token" {
 ### Required
 
 - `type` (String) The type of the API token. Can be `client`, `admin` or `frontend`
-- `username` (String)
+- `username` (String) The unique name of the token. Used as `tokenName` in the API (username is deprecated).
 
 ### Optional
 
 - `created_at` (String) The API token creation date.
-- `environment` (String) The environment the token will have access to. Use `"*"` for all environments. By default, it will have access to all environments.
+- `environment` (String) The environment the token will have access to. By default, it has access to the `development` environment.
 - `expires_at` (String) The API token expiration date.
 - `projects` (Set of String) The project(s) the token will have access to. Use `["*"]` for all projects. By default, it will have access to all projects.
 - `secret` (String, Sensitive) The API token secret.
@@ -41,5 +41,3 @@ resource "unleash_api_token" "my_token" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-
-

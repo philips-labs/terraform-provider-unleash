@@ -58,5 +58,3 @@ resource "unleash_strategy_assignment" "example" {
 
 - `id` (String) The ID of this resource.
 - `strategy_id` (String) Strategy id
-
-

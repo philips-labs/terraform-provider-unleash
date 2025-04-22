@@ -102,5 +102,3 @@ Required:
 
 - `type` (String)
 - `value` (String)
-
-

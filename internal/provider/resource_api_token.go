@@ -26,7 +26,7 @@ func resourceApiToken() *schema.Resource {
 		// The descriptions are used by the documentation generator and the language server.
 		Schema: map[string]*schema.Schema{
 			"username": {
-				Description: "The name of the token. Used as `tokenName` in the API (username is deprecated).",
+				Description: "The unique name of the token. Used as `tokenName` in the API (username is deprecated).",
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
