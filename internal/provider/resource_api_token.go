@@ -148,7 +148,6 @@ func resourceApiTokenRead(ctx context.Context, d *schema.ResourceData, meta inte
 func resourceApiTokenUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*ApiClients).UnleashClient
 
-	fmt.Print("Updating API token...")
 	var diags diag.Diagnostics
 
 	expiresAt := d.Get("expires_at").(string)
