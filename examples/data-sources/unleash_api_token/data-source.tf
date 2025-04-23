@@ -1,6 +1,6 @@
 data "unleash_api_token" "filter" {
-  username = "bobjoe"
-  projects = ["*"]
+  token_name = "bobjoe"
+  projects   = ["*"]
 }
 
 output "token" {

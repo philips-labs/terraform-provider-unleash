@@ -1,5 +1,5 @@
 data "unleash_api_tokens" "bobjoe_tokens" {
-  username = "bobjoe"
+  token_name = "bobjoe"
 }
 
 output "tokens" {

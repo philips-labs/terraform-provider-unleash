@@ -25,8 +25,8 @@ func resourceApiToken() *schema.Resource {
 
 		// The descriptions are used by the documentation generator and the language server.
 		Schema: map[string]*schema.Schema{
-			"username": {
-				Description: "The unique name of the token. Used as `tokenName` in the API (username is deprecated).",
+			"token_name": {
+				Description: "The unique name of the token. This property replaced `username` in Unleash v5).",
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
@@ -79,7 +79,7 @@ func resourceApiTokenCreate(ctx context.Context, d *schema.ResourceData, meta in
 
 	var diags diag.Diagnostics
 
-	tokenName := d.Get("username").(string)
+	tokenName := d.Get("token_name").(string)
 	tokenType := d.Get("type").(string)
 	environment := d.Get("environment").(string)
 	projects := toStringArr(d.Get("projects").(*schema.Set).List())
@@ -136,7 +136,7 @@ func resourceApiTokenRead(ctx context.Context, d *schema.ResourceData, meta inte
 		}
 	}
 
-	_ = d.Set("username", foundApiToken.TokenName)
+	_ = d.Set("token_name", foundApiToken.TokenName)
 	_ = d.Set("type", foundApiToken.Type)
 	_ = d.Set("environment", foundApiToken.Environment)
 	_ = d.Set("created_at", foundApiToken.CreatedAt.Format(time.RFC3339))

@@ -14,7 +14,7 @@ Retrieves existing api tokens. Filters are optional.
 
 ```terraform
 data "unleash_api_tokens" "bobjoe_tokens" {
-  username = "bobjoe"
+  token_name = "bobjoe"
 }
 
 output "tokens" {
@@ -28,7 +28,7 @@ output "tokens" {
 ### Optional
 
 - `projects` (Set of String) Filter tokens by project(s).
-- `username` (String) Filter tokens by username.
+- `token_name` (String) Filter token by the unique name of the token. This property replaced `username` in Unleash v5).
 
 ### Read-Only
 
@@ -45,5 +45,5 @@ Read-Only:
 - `expires_at` (String)
 - `projects` (Set of String)
 - `secret` (String)
+- `token_name` (String)
 - `type` (String)
-- `username` (String)

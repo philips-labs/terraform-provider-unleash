@@ -14,8 +14,8 @@ Retrieves a single api token based on provided filters. It raises an error if mo
 
 ```terraform
 data "unleash_api_token" "filter" {
-  username = "bobjoe"
-  projects = ["*"]
+  token_name = "bobjoe"
+  projects   = ["*"]
 }
 
 output "token" {
@@ -28,7 +28,7 @@ output "token" {
 
 ### Required
 
-- `username` (String) Filter token by username.
+- `token_name` (String) Filter token by the unique name of the token. This property replaced `username` in Unleash v5).
 
 ### Optional
 
@@ -49,5 +49,5 @@ Read-Only:
 - `expires_at` (String)
 - `projects` (Set of String)
 - `secret` (String)
+- `token_name` (String)
 - `type` (String)
-- `username` (String)

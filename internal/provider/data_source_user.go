@@ -57,25 +57,25 @@ func dataSourceUser() *schema.Resource {
 }
 
 func dataSourceUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*ApiClients).PhilipsUnleashClient
+	client := meta.(*ApiClients).UnleashClient
 
 	var diags diag.Diagnostics
 
 	id := d.Get("id").(int)
-	stringId := strconv.Itoa(id)
-	userDetails, _, err := client.Users.GetUserById(stringId)
+	userDetails, _, err := client.UsersAPI.GetUser(ctx, int32(id)).Execute()
 
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
+	stringId := strconv.Itoa(id)
 	d.SetId(stringId)
 
 	_ = d.Set("name", userDetails.Name)
 	_ = d.Set("username", userDetails.Username)
 	_ = d.Set("email", userDetails.Email)
 	for k, v := range rolesLookup {
-		if v == userDetails.RootRole {
+		if int32(v) == *userDetails.RootRole {
 			_ = d.Set("root_role", k)
 		}
 	}
