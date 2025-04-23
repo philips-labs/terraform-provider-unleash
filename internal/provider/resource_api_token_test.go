@@ -20,7 +20,7 @@ func TestAccResourceApiToken(t *testing.T) {
 				// Initial creation
 				Config: testAccResourceApiTokenInitial(randomSuffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("unleash_api_token.foo", "username", regexp.MustCompile("^bar")),
+					resource.TestMatchResourceAttr("unleash_api_token.foo", "token_name", regexp.MustCompile("^bar")),
 					resource.TestMatchResourceAttr("unleash_api_token.foo", "secret", regexp.MustCompile(`^\*:development\.`)),
 					resource.TestCheckResourceAttr("unleash_api_token.foo", "environment", "development"),
 					resource.TestCheckResourceAttr("unleash_api_token.foo", "projects.#", "1"),
@@ -33,7 +33,7 @@ func TestAccResourceApiToken(t *testing.T) {
 					// Verify updates took effect
 					resource.TestMatchResourceAttr("unleash_api_token.foo", "expires_at", regexp.MustCompile("^2023-04-15T14:30:45Z$")),
 					// Verify unchanged attributes
-					resource.TestMatchResourceAttr("unleash_api_token.foo", "username", regexp.MustCompile("^bar")),
+					resource.TestMatchResourceAttr("unleash_api_token.foo", "token_name", regexp.MustCompile("^bar")),
 					resource.TestMatchResourceAttr("unleash_api_token.foo", "secret", regexp.MustCompile(`^\*:development\.`)),
 					resource.TestCheckResourceAttr("unleash_api_token.foo", "environment", "development"),
 					resource.TestCheckResourceAttr("unleash_api_token.foo", "projects.#", "1"),
@@ -46,7 +46,7 @@ func TestAccResourceApiToken(t *testing.T) {
 func testAccResourceApiTokenInitial(suffix string) string {
 	return fmt.Sprintf(`
 resource "unleash_api_token" "foo" {
-  username    = "bar%s"
+  token_name    = "bar%s"
   type        = "client"
   environment = "development"
   projects    = ["*"]
@@ -56,7 +56,7 @@ resource "unleash_api_token" "foo" {
 func testAccResourceApiTokenUpdated(suffix string) string {
 	return fmt.Sprintf(`
 resource "unleash_api_token" "foo" {
-  username    = "bar%s"
+  token_name    = "bar%s"
   type        = "client"
   environment = "development"
   projects    = ["*"]

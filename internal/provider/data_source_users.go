@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -88,11 +87,7 @@ func dataSourceUsersRead(ctx context.Context, d *schema.ResourceData, meta inter
 	d.SetId(query)
 
 	users := []interface{}{}
-	for _, user := range *matchedUsers {
-		userDetails, _, err := client.Users.GetUserById(strconv.Itoa(user.Id))
-		if err != nil {
-			return diag.FromErr(err)
-		}
+	for _, userDetails := range *matchedUsers {
 		tfMap := map[string]interface{}{}
 		tfMap["id"] = userDetails.Id
 		tfMap["name"] = userDetails.Name

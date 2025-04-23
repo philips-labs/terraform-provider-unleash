@@ -14,7 +14,7 @@ Provides a resource for managing unleash api tokens.
 
 ```terraform
 resource "unleash_api_token" "my_token" {
-  username    = "bobjoe"
+  token_name  = "bobjoe"
   type        = "client"
   expires_at  = "2050-04-15T14:30:45Z"
   environment = "development"
@@ -27,8 +27,8 @@ resource "unleash_api_token" "my_token" {
 
 ### Required
 
+- `token_name` (String) The unique name of the token. This property replaced `username` in Unleash v5).
 - `type` (String) The type of the API token. Can be `client`, `admin` or `frontend`
-- `username` (String) The unique name of the token. Used as `tokenName` in the API (username is deprecated).
 
 ### Optional
 

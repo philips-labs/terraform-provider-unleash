@@ -3,9 +3,9 @@ package provider
 import (
 	"context"
 
+	openapiclient "github.com/Unleash/unleash-server-api-go/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/philips-labs/go-unleash-api/api"
 )
 
 func dataSourceApiToken() *schema.Resource {
@@ -17,8 +17,8 @@ func dataSourceApiToken() *schema.Resource {
 
 		// This descriptions are used by the documentation generator and the language server.
 		Schema: map[string]*schema.Schema{
-			"username": {
-				Description: "Filter token by username.",
+			"token_name": {
+				Description: "Filter token by the unique name of the token. This property replaced `username` in Unleash v5).",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
@@ -34,9 +34,10 @@ func dataSourceApiToken() *schema.Resource {
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"username": {
-							Type:     schema.TypeString,
-							Computed: true,
+						"token_name": {
+							Description: "The unique name of the token. This property replaced `username` in Unleash v5).",
+							Type:        schema.TypeString,
+							Computed:    true,
 						},
 						"type": {
 							Description: "The type of the API token. Can be `client`, `admin` or `frontend`",
@@ -78,21 +79,21 @@ func dataSourceApiToken() *schema.Resource {
 }
 
 func dataSourceApiTokenRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*ApiClients).PhilipsUnleashClient
+	client := meta.(*ApiClients).UnleashClient
 
 	var diags diag.Diagnostics
 
-	resp, _, err := client.ApiTokens.GetAllApiTokens()
+	resp, _, err := client.APITokensAPI.GetAllApiTokens(ctx).Execute()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	allTokens := resp.Tokens
 
-	username := d.Get("username").(string)
+	tokenName := d.Get("token_name").(string)
 	projects := d.Get("projects").(*schema.Set).List()
-	var foundApiTokens []api.ApiToken
+	var foundApiTokens []openapiclient.ApiTokenSchema
 	for _, token := range allTokens {
-		if token.Username == username && subslice(toStringArr(projects), token.Projects) {
+		if token.TokenName == tokenName && subslice(toStringArr(projects), token.Projects) {
 			foundApiTokens = append(foundApiTokens, token)
 		}
 	}
@@ -101,13 +102,13 @@ func dataSourceApiTokenRead(ctx context.Context, d *schema.ResourceData, meta in
 		return diag.FromErr(ErrMoreThanOneApiToken)
 	}
 
-	d.SetId(buildId(username, toStringArr(projects)))
+	d.SetId(buildId(tokenName, toStringArr(projects)))
 
 	tokens := []interface{}{}
 	token := foundApiTokens[0]
 
 	tfMap := map[string]interface{}{}
-	tfMap["username"] = token.Username
+	tfMap["token_name"] = token.TokenName
 	tfMap["type"] = token.Type
 	tfMap["environment"] = token.Environment
 	tfMap["projects"] = toInterfaceArr(token.Projects)
