@@ -47,5 +47,3 @@ Read-Only:
 - `secret` (String)
 - `type` (String)
 - `username` (String)
-
-

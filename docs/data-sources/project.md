@@ -39,5 +39,3 @@ data "unleash_project" "example" {
 Read-Only:
 
 - `environment` (String)
-
-

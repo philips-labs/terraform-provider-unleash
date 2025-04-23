@@ -35,12 +35,6 @@ func resourceUser() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validation.StringMatch(regexp.MustCompile(`[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}`), "must be a valid email with lowercase letters"),
 			},
-			"username": {
-				Description: "The user's username.",
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-			},
 			"root_role": {
 				Description:  "The role to assign to the user. Can be `Admin`, `Editor` or `Viewer`",
 				Type:         schema.TypeString,
@@ -73,20 +67,16 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, meta interf
 	var diags diag.Diagnostics
 
 	givenUserRole := d.Get("root_role").(string)
-	roleId := int32(rolesLookup[givenUserRole])
 	givenName := d.Get("name").(string)
 	givenEmail := d.Get("email").(string)
-	givenUsername := d.Get("username").(string)
 	givenSendEmail := d.Get("send_email").(bool)
 
-	createUserSchema := *openapiclient.NewCreateUserSchemaWithDefaults()
+	createUserSchema := *openapiclient.NewCreateUserSchema(openapiclient.CreateUserSchemaRootRole{String: &givenUserRole})
 	createUserSchema.Name = &givenName
 	createUserSchema.Email = &givenEmail
-	createUserSchema.Username = &givenUsername
 	createUserSchema.SendEmail = &givenSendEmail
-	createUserSchema.RootRole = openapiclient.Int32AsCreateUserSchemaRootRole(&roleId)
 
-	createdUser, resp, err := client.UsersApi.CreateUser(ctx).CreateUserSchema(createUserSchema).Execute()
+	createdUser, resp, err := client.UsersAPI.CreateUser(ctx).CreateUserSchema(createUserSchema).Execute()
 	if resp == nil {
 		return diag.FromErr(fmt.Errorf("response is nil: %v", err))
 	}
@@ -110,8 +100,12 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, meta interfac
 
 	var diags diag.Diagnostics
 
-	userId := d.Id()
-	user, resp, err := client.UsersApi.GetUser(ctx, userId).Execute()
+	userId, parseErr := strconv.ParseInt(d.Id(), 10, 32)
+
+	if parseErr != nil {
+		return diag.FromErr(parseErr)
+	}
+	user, resp, err := client.UsersAPI.GetUser(ctx, int32(userId)).Execute()
 	if err != nil {
 		if resp.StatusCode == 404 {
 			d.SetId("")
@@ -119,8 +113,7 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		}
 		return diag.FromErr(err)
 	}
-	_ = d.Set("name", user.Name)
-	_ = d.Set("username", user.Username)
+	_ = d.Set("name", user.Name.Get())
 	_ = d.Set("email", user.Email)
 
 	for k, v := range rolesLookup {
@@ -138,19 +131,20 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, meta interf
 	var diags diag.Diagnostics
 
 	givenUserRole := d.Get("root_role").(string)
-	roleId := int32(rolesLookup[givenUserRole])
 	givenName := d.Get("name").(string)
 	givenEmail := d.Get("email").(string)
-	rootRole := openapiclient.Int32AsCreateUserSchemaRootRole(&roleId)
+	rootRole := openapiclient.StringAsCreateUserSchemaRootRole(&givenUserRole)
 
-	requestBody := map[string]interface{}{
-		"name":     &givenName,
-		"email":    &givenEmail,
-		"rootRole": &rootRole,
+	updateUserSchema := *openapiclient.NewUpdateUserSchema()
+	updateUserSchema.Name = &givenName
+	updateUserSchema.Email = &givenEmail
+	updateUserSchema.RootRole = &rootRole
+
+	userId, parseErr := strconv.ParseInt(d.Id(), 10, 32)
+	if parseErr != nil {
+		return diag.FromErr(parseErr)
 	}
-
-	userId := d.Id()
-	_, resp, err := client.UsersApi.UpdateUser(ctx, userId).RequestBody(requestBody).Execute()
+	_, resp, err := client.UsersAPI.UpdateUser(ctx, int32(userId)).UpdateUserSchema(updateUserSchema).Execute()
 	if resp == nil {
 		return diag.FromErr(fmt.Errorf("response is nil: %v", err))
 	}
@@ -166,8 +160,11 @@ func resourceUserDelete(ctx context.Context, d *schema.ResourceData, meta interf
 
 	var diags diag.Diagnostics
 
-	userId := d.Id()
-	_, err := client.UsersApi.DeleteUser(ctx, userId).Execute()
+	userId, parseErr := strconv.ParseInt(d.Id(), 10, 32)
+	if parseErr != nil {
+		return diag.FromErr(parseErr)
+	}
+	_, err := client.UsersAPI.DeleteUser(ctx, int32(userId)).Execute()
 	if err != nil {
 		return diag.FromErr(err)
 	}

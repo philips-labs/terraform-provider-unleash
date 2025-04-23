@@ -31,5 +31,3 @@ data "unleash_feature_type" "example" {
 - `id` (String) The ID of this resource.
 - `lifetime_days` (Number) The lifetime of the feature type in days
 - `name` (String) Feature type name
-
-

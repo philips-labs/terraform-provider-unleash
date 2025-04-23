@@ -16,7 +16,6 @@ Provides a resource for managing unleash users.
 resource "unleash_user" "my_user" {
   name       = "Bob Joe"
   email      = "bob.joe@gmail.com"
-  username   = "bobjoe"
   root_role  = "Editor"
   send_email = false
 }
@@ -30,7 +29,6 @@ resource "unleash_user" "my_user" {
 - `email` (String) The user's email address.
 - `name` (String) The user's name.
 - `root_role` (String) The role to assign to the user. Can be `Admin`, `Editor` or `Viewer`
-- `username` (String) The user's username.
 
 ### Optional
 
@@ -41,5 +39,3 @@ resource "unleash_user" "my_user" {
 - `email_sent` (Boolean) Whether the welcome email was successfully sent to the user.
 - `id` (String) The ID of this resource.
 - `invite_link` (String) The link for the login link.
-
-

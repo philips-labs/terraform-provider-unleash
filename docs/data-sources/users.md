@@ -46,5 +46,3 @@ Read-Only:
 - `name` (String)
 - `root_role` (String)
 - `username` (String)
-
-

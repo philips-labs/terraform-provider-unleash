@@ -37,5 +37,3 @@ output "user_details" {
 - `name` (String) The user's name.
 - `root_role` (String) The user's role.
 - `username` (String) The user's username.
-
-
