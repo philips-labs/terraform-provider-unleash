@@ -35,6 +35,12 @@ func resourceUser() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validation.StringMatch(regexp.MustCompile(`[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}`), "must be a valid email with lowercase letters"),
 			},
+			"username": {
+				Description: "The user's username. Changing it forces a new resource to be created.",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+			},
 			"root_role": {
 				Description:  "The role to assign to the user. Can be `Admin`, `Editor` or `Viewer`",
 				Type:         schema.TypeString,
@@ -69,11 +75,13 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, meta interf
 	givenUserRole := d.Get("root_role").(string)
 	givenName := d.Get("name").(string)
 	givenEmail := d.Get("email").(string)
+	givenUsername := d.Get("username").(string)
 	givenSendEmail := d.Get("send_email").(bool)
 
 	createUserSchema := *openapiclient.NewCreateUserSchema(openapiclient.CreateUserSchemaRootRole{String: &givenUserRole})
 	createUserSchema.Name = &givenName
 	createUserSchema.Email = &givenEmail
+	createUserSchema.Username = &givenUsername
 	createUserSchema.SendEmail = &givenSendEmail
 
 	createdUser, resp, err := client.UsersAPI.CreateUser(ctx).CreateUserSchema(createUserSchema).Execute()
@@ -113,6 +121,7 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		}
 		return diag.FromErr(err)
 	}
+	_ = d.Set("username", user.Username.Get())
 	_ = d.Set("name", user.Name.Get())
 	_ = d.Set("email", user.Email)
 
