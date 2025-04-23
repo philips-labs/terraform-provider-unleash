@@ -53,7 +53,7 @@ func resourceApiToken() *schema.Resource {
 				ForceNew:    true,
 			},
 			"expires_at": {
-				Description: "The API token expiration date.",
+				Description: "The API token expiration date in RFC3339 format. If not set, the token will not expire.",
 				Type:        schema.TypeString,
 				Optional:    true,
 			},

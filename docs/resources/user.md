@@ -29,6 +29,7 @@ resource "unleash_user" "my_user" {
 - `email` (String) The user's email address.
 - `name` (String) The user's name.
 - `root_role` (String) The role to assign to the user. Can be `Admin`, `Editor` or `Viewer`
+- `username` (String) The user's username. Changing it forces a new resource to be created.
 
 ### Optional
 

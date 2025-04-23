@@ -16,7 +16,7 @@ Provides a resource for managing unleash api tokens.
 resource "unleash_api_token" "my_token" {
   username    = "bobjoe"
   type        = "client"
-  expires_at  = "2024-10-19"
+  expires_at  = "2050-04-15T14:30:45Z"
   environment = "development"
   projects    = ["*"]
 }
@@ -34,7 +34,7 @@ resource "unleash_api_token" "my_token" {
 
 - `created_at` (String) The API token creation date.
 - `environment` (String) The environment the token will have access to. By default, it has access to the `development` environment.
-- `expires_at` (String) The API token expiration date.
+- `expires_at` (String) The API token expiration date in RFC3339 format. If not set, the token will not expire.
 - `projects` (Set of String) The project(s) the token will have access to. Use `["*"]` for all projects. By default, it will have access to all projects.
 - `secret` (String, Sensitive) The API token secret.
 
