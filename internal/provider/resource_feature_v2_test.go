@@ -29,6 +29,11 @@ func TestAccResourceFeatureV2(t *testing.T) {
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.0.name", "remoteAddress"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.0.parameters.IPs", "189.434.777.123,host.test.com"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.0.variant.0.name", "Variant"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.0.variant.0.weight", "500"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.0.variant.0.weight_type", "fix"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.0.variant.0.payload.0.type", "string"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.0.variant.0.payload.0.value", "foo"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.0.variant.1.name", "2222"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.name", "flexibleRollout"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.parameters.rollout", "68"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.parameters.stickiness", "random"),
@@ -70,10 +75,15 @@ resource "unleash_feature_v2" "foo" {
 			}
 			variant {
 				name = "Variant"
+				weight = 500
+				weight_type = "fix"
 				payload {
 					type  = "string"
 					value = "foo"
 				}
+			}
+			variant {
+				name = "2222"
 			}
 	  }
 	  strategy {

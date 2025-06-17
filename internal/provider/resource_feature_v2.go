@@ -313,7 +313,7 @@ func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta int
 				}
 			}
 		}
-		_ = d.Set("environment", flattenEnvironments(toSave))
+		_ = d.Set("environment", flattenEnvironments(e.([]interface{}), toSave))
 	}
 
 	if t, ok := d.GetOk("tag"); ok {
@@ -601,72 +601,87 @@ func toFeatureEnvironment(tfEnvironment map[string]interface{}) api.Environment 
 	return environment
 }
 
-func flattenEnvironments(environments []api.Environment) []interface{} {
-	if environments == nil {
-		return []interface{}{}
+func flattenEnvironments(tfEnvsIn []interface{}, environments []api.Environment) []interface{} {
+	apiEnvMap := make(map[string]api.Environment)
+	for _, e := range environments {
+		apiEnvMap[e.Name] = e
 	}
-
-	tfEnvironments := []interface{}{}
-
-	for _, env := range environments {
-		tfEnvironment := map[string]interface{}{}
-		tfEnvironment["name"] = env.Name
-		tfEnvironment["enabled"] = env.Enabled
-
-		if env.Strategies != nil {
-			tfStrategies := []interface{}{}
-			for _, strategy := range env.Strategies {
-				tfStrategy := map[string]interface{}{}
-				tfStrategy["id"] = strategy.ID
-				tfStrategy["name"] = strategy.Name
-				retrievedParams := strategy.Parameters.(map[string]interface{})
-				castedParams := make(map[string]interface{})
-				for k, v := range retrievedParams {
-					castedParams[k] = v.(string)
-				}
-				tfStrategy["parameters"] = castedParams
-				if strategy.Constraints != nil {
-					tfConstraints := []interface{}{}
-					for _, constraint := range strategy.Constraints {
-						tfConstraint := map[string]interface{}{}
-						tfConstraint["context_name"] = constraint.ContextName
-						tfConstraint["operator"] = constraint.Operator
-						tfConstraint["value"] = constraint.Value
-						tfConstraint["values"] = constraint.Values
-						tfConstraint["inverted"] = constraint.Inverted
-						tfConstraint["case_insensitive"] = constraint.CaseInsensitive
-						tfConstraints = append(tfConstraints, tfConstraint)
-					}
-					tfStrategy["constraint"] = tfConstraints
-				}
-				if strategy.Variants != nil {
-					tfVariants := []interface{}{}
-					for _, variant := range strategy.Variants {
-						tfVariant := map[string]interface{}{}
-						tfVariant["name"] = variant.Name
-						tfVariant["stickiness"] = variant.Stickiness
-						tfVariant["weight"] = variant.Weight
-						tfVariant["weight_type"] = variant.WeightType
-						if variant.Payload != nil {
-							payload := map[string]interface{}{
-								"type":  variant.Payload.Type,
-								"value": variant.Payload.Value,
-							}
-							tfVariant["payload"] = []interface{}{payload}
-						}
-						tfVariants = append(tfVariants, tfVariant)
-					}
-					tfStrategy["variant"] = tfVariants
-				}
-				tfStrategies = append(tfStrategies, tfStrategy)
+	// all iterations are based on tf state just to keep the right order, but values are retrieved from the API and set back.
+	result := make([]interface{}, 0, len(tfEnvsIn))
+	for _, tfEnv := range tfEnvsIn {
+		tfEnvMap := tfEnv.(map[string]interface{})
+		envName := tfEnvMap["name"].(string)
+		if env, exists := apiEnvMap[envName]; exists {
+			envFlattened := map[string]interface{}{}
+			envFlattened["name"] = env.Name
+			envFlattened["enabled"] = env.Enabled
+			apiEnvStrategyMap := make(map[string]api.FeatureStrategy)
+			for _, s := range env.Strategies {
+				apiEnvStrategyMap[s.Name] = s
 			}
-			tfEnvironment["strategy"] = tfStrategies
+			tfEnvStrategies := tfEnvMap["strategy"].([]interface{})
+			strategiesResult := make([]interface{}, 0, len(tfEnvStrategies))
+			for _, tfStrategy := range tfEnvStrategies {
+				tfStrategyMap := tfStrategy.(map[string]interface{})
+				stratName := tfStrategyMap["name"].(string)
+				if strategy, exists := apiEnvStrategyMap[stratName]; exists {
+					stratFlattened := map[string]interface{}{}
+					stratFlattened["id"] = strategy.ID
+					stratFlattened["name"] = strategy.Name
+					retrievedParams := strategy.Parameters.(map[string]interface{})
+					castedParams := make(map[string]interface{})
+					for k, v := range retrievedParams {
+						castedParams[k] = v.(string)
+					}
+					stratFlattened["parameters"] = castedParams
+					if strategy.Constraints != nil {
+						tfConstraints := []interface{}{}
+						for _, constraint := range strategy.Constraints {
+							tfConstraint := map[string]interface{}{}
+							tfConstraint["context_name"] = constraint.ContextName
+							tfConstraint["operator"] = constraint.Operator
+							tfConstraint["value"] = constraint.Value
+							tfConstraint["values"] = constraint.Values
+							tfConstraint["inverted"] = constraint.Inverted
+							tfConstraint["case_insensitive"] = constraint.CaseInsensitive
+							tfConstraints = append(tfConstraints, tfConstraint)
+						}
+						stratFlattened["constraint"] = tfConstraints
+					}
+					apiEnvStrategyVariantMap := make(map[string]api.Variant)
+					for _, v := range strategy.Variants {
+						apiEnvStrategyVariantMap[v.Name] = v
+					}
+					tfEnvStrategiesVariants := tfStrategyMap["variant"].([]interface{})
+					variantsResult := make([]interface{}, 0, len(tfEnvStrategiesVariants))
+					for _, tfV := range tfEnvStrategiesVariants {
+						tfVariant := tfV.(map[string]interface{})
+						name := tfVariant["name"].(string)
+						if variant, exists := apiEnvStrategyVariantMap[name]; exists {
+							variantFlattened := map[string]interface{}{}
+							variantFlattened["name"] = variant.Name
+							variantFlattened["stickiness"] = variant.Stickiness
+							variantFlattened["weight"] = variant.Weight
+							variantFlattened["weight_type"] = variant.WeightType
+							if variant.Payload != nil {
+								payload := map[string]interface{}{
+									"type":  variant.Payload.Type,
+									"value": variant.Payload.Value,
+								}
+								variantFlattened["payload"] = []interface{}{payload}
+							}
+							variantsResult = append(variantsResult, variantFlattened)
+						}
+					}
+					stratFlattened["variant"] = variantsResult
+					strategiesResult = append(strategiesResult, stratFlattened)
+				}
+			}
+			envFlattened["strategy"] = strategiesResult
+			result = append(result, envFlattened)
 		}
-
-		tfEnvironments = append(tfEnvironments, tfEnvironment)
 	}
-
-	return tfEnvironments
+	return result
 }
 
 func flattenTags(tags []api.FeatureTag) []interface{} {
