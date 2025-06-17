@@ -336,7 +336,7 @@ func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta int
 	_ = d.Set("description", feature.Description)
 	_ = d.Set("type", feature.Type)
 	_ = d.Set("project_id", feature.Project)
-	_ = d.Set("variant", flattenVariants(feature.Variants))
+	_ = d.Set("variant", flattenVariants(d.Get("variant").([]interface{}), feature.Variants))
 
 	if e, ok := d.GetOk("environment"); ok {
 		toSave := []api.Environment{}

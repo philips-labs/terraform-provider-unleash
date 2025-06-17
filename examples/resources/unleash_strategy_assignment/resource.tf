@@ -22,4 +22,14 @@ resource "unleash_strategy_assignment" "example" {
     stickiness = "random"
     groupId    = "toggle"
   }
+  variant {
+    name = "Variant1"
+  }
+  variant {
+    name = "Variant2"
+    payload {
+      type  = "string"
+      value = "foo"
+    }
+  }
 }

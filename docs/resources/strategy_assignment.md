@@ -37,6 +37,16 @@ resource "unleash_strategy_assignment" "example" {
     stickiness = "random"
     groupId    = "toggle"
   }
+  variant {
+    name = "Variant1"
+  }
+  variant {
+    name = "Variant2"
+    payload {
+      type  = "string"
+      value = "foo"
+    }
+  }
 }
 ```
 
@@ -53,8 +63,31 @@ resource "unleash_strategy_assignment" "example" {
 ### Optional
 
 - `parameters` (Map of String) Strategy parameters. All the values need to informed as strings.
+- `variant` (Block List) Feature variant (see [below for nested schema](#nestedblock--variant))
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
 - `strategy_id` (String) Strategy id
+
+<a id="nestedblock--variant"></a>
+### Nested Schema for `variant`
+
+Required:
+
+- `name` (String) Variant name
+
+Optional:
+
+- `payload` (Block Set, Max: 1) Variant payload. The type of the payload can be `string`, `json` or `csv` or `number` (see [below for nested schema](#nestedblock--variant--payload))
+- `stickiness` (String) Variant stickiness. Default is `default`.
+- `weight` (Number) Variant weight. Only considered when the `weight_type` is `fix`. It is calculated automatically if the `weight_type` is `variable`.
+- `weight_type` (String) Variant weight type. The weight type can be `fix` or `variable`. Default is `variable`.
+
+<a id="nestedblock--variant--payload"></a>
+### Nested Schema for `variant.payload`
+
+Required:
+
+- `type` (String)
+- `value` (String) Always a string value, independent of the type.
