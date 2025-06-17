@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.19.4
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1
-	github.com/philips-labs/go-unleash-api v1.0.7
+	github.com/philips-labs/go-unleash-api/v2 v2.0.1
 )
 
 require (

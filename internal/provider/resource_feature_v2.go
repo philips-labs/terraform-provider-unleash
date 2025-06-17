@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/philips-labs/go-unleash-api/api"
+	"github.com/philips-labs/go-unleash-api/v2/api"
 )
 
 func resourceFeatureV2() *schema.Resource {
@@ -86,6 +86,58 @@ func resourceFeatureV2() *schema.Resource {
 											Type: schema.TypeString,
 										},
 									},
+									"variant": {
+										Description: "Feature strategy variant",
+										Type:        schema.TypeList,
+										Optional:    true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"name": {
+													Description: "Variant name",
+													Type:        schema.TypeString,
+													Required:    true,
+												},
+												"stickiness": {
+													Description: "Variant stickiness. Default is `default`.",
+													Type:        schema.TypeString,
+													Optional:    true,
+													Default:     "default",
+												},
+												"weight": {
+													Description:  "Variant weight. Only considered when the `weight_type` is `fix`. It is calculated automatically if the `weight_type` is `variable`.",
+													Type:         schema.TypeInt,
+													Optional:     true,
+													Computed:     true,
+													ValidateFunc: validation.IntBetween(0, 1000),
+												},
+												"weight_type": {
+													Description: "Variant weight type. The weight type can be `fix` or `variable`. Default is `variable`.",
+													Type:        schema.TypeString,
+													Optional:    true,
+													Default:     "variable",
+												},
+												"payload": {
+													Description: "Variant payload. The type of the payload can be `string`, `json` or `csv` or `number`",
+													Type:        schema.TypeSet,
+													Optional:    true,
+													MaxItems:    1,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"type": {
+																Type:     schema.TypeString,
+																Required: true,
+															},
+															"value": {
+																Type:        schema.TypeString,
+																Description: "Always a string value, independent of the type.",
+																Required:    true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
 									"constraint": {
 										Description: "Strategy constraint",
 										Type:        schema.TypeList,
@@ -143,77 +195,6 @@ func resourceFeatureV2() *schema.Resource {
 					},
 				},
 			},
-			"variant": {
-				Description: "Feature variant",
-				Type:        schema.TypeList,
-				Optional:    true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"name": {
-							Description: "Variant name",
-							Type:        schema.TypeString,
-							Required:    true,
-						},
-						"stickiness": {
-							Description: "Variant stickiness. Default is `default`.",
-							Type:        schema.TypeString,
-							Optional:    true,
-							Default:     "default",
-						},
-						"weight": {
-							Description:  "Variant weight. Only considered when the `weight_type` is `fix`. It is calculated automatically if the `weight_type` is `variable`.",
-							Type:         schema.TypeInt,
-							Optional:     true,
-							Computed:     true,
-							ValidateFunc: validation.IntBetween(0, 1000),
-						},
-						"weight_type": {
-							Description: "Variant weight type. The weight type can be `fix` or `variable`. Default is `variable`.",
-							Type:        schema.TypeString,
-							Optional:    true,
-							Default:     "variable",
-						},
-						"payload": {
-							Description: "Variant payload. The type of the payload can be `string`, `json` or `csv`",
-							Type:        schema.TypeSet,
-							Optional:    true,
-							MaxItems:    1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"type": {
-										Type:     schema.TypeString,
-										Required: true,
-									},
-									"value": {
-										Type:     schema.TypeString,
-										Required: true,
-									},
-								},
-							},
-						},
-						"overrides": {
-							Description: "Overrides existing context field values. Values are comma separated e.g `v1, v2, ...`)",
-							Type:        schema.TypeSet,
-							Optional:    true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"context_name": {
-										Type:     schema.TypeString,
-										Required: true,
-									},
-									"values": {
-										Type:     schema.TypeList,
-										Required: true,
-										Elem: &schema.Schema{
-											Type: schema.TypeString,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
 			"tag": {
 				Description: "Tag to add to the feature",
 				Type:        schema.TypeList,
@@ -256,20 +237,6 @@ func resourceFeatureV2Create(ctx context.Context, d *schema.ResourceData, meta i
 	}
 	if err != nil {
 		return diag.FromErr(err)
-	}
-
-	if v, ok := d.GetOk("variant"); ok {
-		tfVariants := v.([]interface{})
-		variants := make([]api.Variant, 0, len(tfVariants))
-		for _, tfVariant := range tfVariants {
-			variants = append(variants, toFeatureVariant(tfVariant.(map[string]interface{})))
-		}
-		_, resp, err := client.Variants.AddVariantsForFeatureToggle(feature.Project, feature.Name, variants)
-		if resp == nil || err != nil {
-			client.FeatureToggles.ArchiveFeature(feature.Project, feature.Name)
-			client.FeatureToggles.DeleteArchivedFeature(feature.Name)
-			return diag.FromErr(err)
-		}
 	}
 
 	if e, ok := d.GetOk("environment"); ok {
@@ -336,11 +303,9 @@ func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta int
 	_ = d.Set("description", feature.Description)
 	_ = d.Set("type", feature.Type)
 	_ = d.Set("project_id", feature.Project)
-	_ = d.Set("variant", flattenVariants(feature.Variants))
 
 	if e, ok := d.GetOk("environment"); ok {
 		toSave := []api.Environment{}
-
 		for _, tfEnvironment := range e.([]interface{}) {
 			for _, env := range feature.Environments {
 				if tfEnvironment.(map[string]interface{})["name"] == env.Name {
@@ -348,8 +313,7 @@ func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta int
 				}
 			}
 		}
-
-		_ = d.Set("environment", flattenEnvironments(toSave))
+		_ = d.Set("environment", flattenEnvironments(e.([]interface{}), toSave))
 	}
 
 	if t, ok := d.GetOk("tag"); ok {
@@ -390,21 +354,6 @@ func resourceFeatureV2Update(ctx context.Context, d *schema.ResourceData, meta i
 	}
 	if err != nil {
 		return diag.FromErr(err)
-	}
-
-	if d.HasChange("variant") {
-		tfVariants := d.Get("variant").([]interface{})
-		variants := make([]api.Variant, 0, len(tfVariants))
-		for _, tfVariant := range tfVariants {
-			variants = append(variants, toFeatureVariant(tfVariant.(map[string]interface{})))
-		}
-		_, resp, err := client.Variants.AddVariantsForFeatureToggle(feature.Project, feature.Name, variants)
-		if resp == nil {
-			return diag.FromErr(fmt.Errorf("response is nil: %v", err))
-		}
-		if err != nil {
-			return diag.FromErr(err)
-		}
 	}
 
 	if d.HasChange("tag") {
@@ -637,6 +586,13 @@ func toFeatureEnvironment(tfEnvironment map[string]interface{}) api.Environment 
 					}
 					strategy.Constraints = constraints
 				}
+				if tfVariants, ok := strategyMap["variant"].([]interface{}); ok && len(tfVariants) > 0 {
+					variants := make([]api.Variant, 0, len(tfVariants))
+					for _, tfVariant := range tfVariants {
+						variants = append(variants, toFeatureVariant(tfVariant.(map[string]interface{})))
+					}
+					strategy.Variants = variants
+				}
 				strategies = append(strategies, strategy)
 			}
 		}
@@ -645,53 +601,87 @@ func toFeatureEnvironment(tfEnvironment map[string]interface{}) api.Environment 
 	return environment
 }
 
-func flattenEnvironments(environments []api.Environment) []interface{} {
-	if environments == nil {
-		return []interface{}{}
+func flattenEnvironments(tfEnvsIn []interface{}, environments []api.Environment) []interface{} {
+	apiEnvMap := make(map[string]api.Environment)
+	for _, e := range environments {
+		apiEnvMap[e.Name] = e
 	}
-
-	tfEnvironments := []interface{}{}
-
-	for _, env := range environments {
-		tfEnvironment := map[string]interface{}{}
-		tfEnvironment["name"] = env.Name
-		tfEnvironment["enabled"] = env.Enabled
-
-		if env.Strategies != nil {
-			tfStrategies := []interface{}{}
-			for _, strategy := range env.Strategies {
-				tfStrategy := map[string]interface{}{}
-				tfStrategy["id"] = strategy.ID
-				tfStrategy["name"] = strategy.Name
-				retrievedParams := strategy.Parameters.(map[string]interface{})
-				castedParams := make(map[string]interface{})
-				for k, v := range retrievedParams {
-					castedParams[k] = v.(string)
-				}
-				tfStrategy["parameters"] = castedParams
-				if strategy.Constraints != nil {
-					tfConstraints := []interface{}{}
-					for _, constraint := range strategy.Constraints {
-						tfConstraint := map[string]interface{}{}
-						tfConstraint["context_name"] = constraint.ContextName
-						tfConstraint["operator"] = constraint.Operator
-						tfConstraint["value"] = constraint.Value
-						tfConstraint["values"] = constraint.Values
-						tfConstraint["inverted"] = constraint.Inverted
-						tfConstraint["case_insensitive"] = constraint.CaseInsensitive
-						tfConstraints = append(tfConstraints, tfConstraint)
-					}
-					tfStrategy["constraint"] = tfConstraints
-				}
-				tfStrategies = append(tfStrategies, tfStrategy)
+	// all iterations are based on tf state just to keep the right order, but values are retrieved from the API and set back.
+	result := make([]interface{}, 0, len(tfEnvsIn))
+	for _, tfEnv := range tfEnvsIn {
+		tfEnvMap := tfEnv.(map[string]interface{})
+		envName := tfEnvMap["name"].(string)
+		if env, exists := apiEnvMap[envName]; exists {
+			envFlattened := map[string]interface{}{}
+			envFlattened["name"] = env.Name
+			envFlattened["enabled"] = env.Enabled
+			apiEnvStrategyMap := make(map[string]api.FeatureStrategy)
+			for _, s := range env.Strategies {
+				apiEnvStrategyMap[s.Name] = s
 			}
-			tfEnvironment["strategy"] = tfStrategies
+			tfEnvStrategies := tfEnvMap["strategy"].([]interface{})
+			strategiesResult := make([]interface{}, 0, len(tfEnvStrategies))
+			for _, tfStrategy := range tfEnvStrategies {
+				tfStrategyMap := tfStrategy.(map[string]interface{})
+				stratName := tfStrategyMap["name"].(string)
+				if strategy, exists := apiEnvStrategyMap[stratName]; exists {
+					stratFlattened := map[string]interface{}{}
+					stratFlattened["id"] = strategy.ID
+					stratFlattened["name"] = strategy.Name
+					retrievedParams := strategy.Parameters.(map[string]interface{})
+					castedParams := make(map[string]interface{})
+					for k, v := range retrievedParams {
+						castedParams[k] = v.(string)
+					}
+					stratFlattened["parameters"] = castedParams
+					if strategy.Constraints != nil {
+						tfConstraints := []interface{}{}
+						for _, constraint := range strategy.Constraints {
+							tfConstraint := map[string]interface{}{}
+							tfConstraint["context_name"] = constraint.ContextName
+							tfConstraint["operator"] = constraint.Operator
+							tfConstraint["value"] = constraint.Value
+							tfConstraint["values"] = constraint.Values
+							tfConstraint["inverted"] = constraint.Inverted
+							tfConstraint["case_insensitive"] = constraint.CaseInsensitive
+							tfConstraints = append(tfConstraints, tfConstraint)
+						}
+						stratFlattened["constraint"] = tfConstraints
+					}
+					apiEnvStrategyVariantMap := make(map[string]api.Variant)
+					for _, v := range strategy.Variants {
+						apiEnvStrategyVariantMap[v.Name] = v
+					}
+					tfEnvStrategiesVariants := tfStrategyMap["variant"].([]interface{})
+					variantsResult := make([]interface{}, 0, len(tfEnvStrategiesVariants))
+					for _, tfV := range tfEnvStrategiesVariants {
+						tfVariant := tfV.(map[string]interface{})
+						name := tfVariant["name"].(string)
+						if variant, exists := apiEnvStrategyVariantMap[name]; exists {
+							variantFlattened := map[string]interface{}{}
+							variantFlattened["name"] = variant.Name
+							variantFlattened["stickiness"] = variant.Stickiness
+							variantFlattened["weight"] = variant.Weight
+							variantFlattened["weight_type"] = variant.WeightType
+							if variant.Payload != nil {
+								payload := map[string]interface{}{
+									"type":  variant.Payload.Type,
+									"value": variant.Payload.Value,
+								}
+								variantFlattened["payload"] = []interface{}{payload}
+							}
+							variantsResult = append(variantsResult, variantFlattened)
+						}
+					}
+					stratFlattened["variant"] = variantsResult
+					strategiesResult = append(strategiesResult, stratFlattened)
+				}
+			}
+			envFlattened["strategy"] = strategiesResult
+			result = append(result, envFlattened)
 		}
-
-		tfEnvironments = append(tfEnvironments, tfEnvironment)
 	}
-
-	return tfEnvironments
+	return result
 }
 
 func flattenTags(tags []api.FeatureTag) []interface{} {

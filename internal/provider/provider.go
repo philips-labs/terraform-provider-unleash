@@ -8,7 +8,7 @@ import (
 	openapiclient "github.com/Unleash/unleash-server-api-go/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/philips-labs/go-unleash-api/api"
+	"github.com/philips-labs/go-unleash-api/v2/api"
 )
 
 var descriptions map[string]string
