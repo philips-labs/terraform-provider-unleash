@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/philips-labs/go-unleash-api/api"
+	"github.com/philips-labs/go-unleash-api/v2/api"
 )
 
 func resourceFeature() *schema.Resource {
