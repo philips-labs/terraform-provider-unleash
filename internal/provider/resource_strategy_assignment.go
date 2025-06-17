@@ -312,35 +312,6 @@ func toFeatureVariant(tfVariant map[string]interface{}) api.Variant {
 	return variant
 }
 
-// func flattenVariants(tfVariants []interface{}, variantsFromApi []api.Variant) []interface{} {
-// 	if variantsFromApi == nil {
-// 		return []interface{}{}
-// 	}
-
-// 	vVariants := []interface{}{}
-
-// 	for _, variant := range variantsFromApi {
-// 		mVariant := map[string]interface{}{}
-// 		mVariant["name"] = variant.Name
-// 		mVariant["weight"] = variant.Weight
-// 		mVariant["weight_type"] = variant.WeightType
-// 		mVariant["stickiness"] = variant.Stickiness
-
-// 		if variant.Payload != nil {
-// 			mPayloads := []interface{}{}
-// 			mPayload := map[string]interface{}{}
-// 			mPayload["type"] = variant.Payload.Type
-// 			mPayload["value"] = variant.Payload.Value
-// 			mPayloads = append(mPayloads, mPayload)
-// 			mVariant["payload"] = mPayloads
-// 		}
-
-// 		vVariants = append(vVariants, mVariant)
-// 	}
-
-// 	return vVariants
-// }
-
 func flattenVariants(tfVariants []interface{}, variantsFromApi []api.Variant) []interface{} {
 	apiVariantMap := make(map[string]api.Variant)
 	for _, v := range variantsFromApi {

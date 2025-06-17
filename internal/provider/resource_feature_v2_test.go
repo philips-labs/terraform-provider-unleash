@@ -28,6 +28,7 @@ func TestAccResourceFeatureV2(t *testing.T) {
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.enabled", "true"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.0.name", "remoteAddress"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.0.parameters.IPs", "189.434.777.123,host.test.com"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.0.variant.0.name", "Variant"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.name", "flexibleRollout"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.parameters.rollout", "68"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.parameters.stickiness", "random"),
@@ -63,30 +64,37 @@ resource "unleash_feature_v2" "foo" {
 	  enabled = true
   
 	  strategy {
-		name = "remoteAddress"
-		parameters = {
-		  IPs = "189.434.777.123,host.test.com"
-		}
+			name = "remoteAddress"
+			parameters = {
+				IPs = "189.434.777.123,host.test.com"
+			}
+			variant {
+				name = "Variant"
+				payload {
+					type  = "string"
+					value = "foo"
+				}
+			}
 	  }
 	  strategy {
-		name = "flexibleRollout"
-		constraint {
-			context_name = "appName"
-			operator = "NUM_EQ"
-			case_insensitive = false
-			inverted = false
-			value = "1"
-		}
-		parameters = {
-		  rollout    = "68"
-		  stickiness = "random"
-		  groupId    = "toggle"
-		}
+			name = "flexibleRollout"
+			constraint {
+				context_name = "appName"
+				operator = "NUM_EQ"
+				case_insensitive = false
+				inverted = false
+				value = "1"
+			}
+			parameters = {
+				rollout    = "68"
+				stickiness = "random"
+				groupId    = "toggle"
+			}
 	  }
 	}
 	tag {
 		type = "simple"
 		value = "value"
 	}
-  }
+}
 `, utils.RandomString(4))
