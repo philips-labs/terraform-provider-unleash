@@ -38,10 +38,10 @@ resource "unleash_strategy_assignment" "example" {
     groupId    = "toggle"
   }
   variant {
-    name = "Variant1"
+    name = "a"
   }
   variant {
-    name = "Variant2"
+    name = "b" # if you see drifts with multiple variants, sort them by name.
     payload {
       type  = "string"
       value = "foo"
@@ -63,7 +63,7 @@ resource "unleash_strategy_assignment" "example" {
 ### Optional
 
 - `parameters` (Map of String) Strategy parameters. All the values need to informed as strings.
-- `variant` (Block List) Feature variant (see [below for nested schema](#nestedblock--variant))
+- `variant` (Block List) Feature strategy variant. The api returns them sorted by name, so if you see drifts, sort them by name when declaring them in the configuration as well. (see [below for nested schema](#nestedblock--variant))
 
 ### Read-Only
 

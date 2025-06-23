@@ -23,10 +23,10 @@ resource "unleash_strategy_assignment" "example" {
     groupId    = "toggle"
   }
   variant {
-    name = "Variant1"
+    name = "a"
   }
   variant {
-    name = "Variant2"
+    name = "b" # if you see drifts with multiple variants, sort them by name.
     payload {
       type  = "string"
       value = "foo"

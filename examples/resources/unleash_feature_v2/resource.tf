@@ -40,7 +40,7 @@ resource "unleash_feature_v2" "with_env_strategies" {
         groupId    = "toggle"
       }
       variant {
-        name = "Variant"
+        name = "a" # if you see drifts with multiple variants, sort them by name.
         payload {
           type  = "string"
           value = "foo"

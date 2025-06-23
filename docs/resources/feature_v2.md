@@ -55,7 +55,7 @@ resource "unleash_feature_v2" "with_env_strategies" {
         groupId    = "toggle"
       }
       variant {
-        name = "Variant"
+        name = "a" # if you see drifts with multiple variants, sort them by name.
         payload {
           type  = "string"
           value = "foo"
@@ -119,7 +119,7 @@ Optional:
 
 - `constraint` (Block List) Strategy constraint (see [below for nested schema](#nestedblock--environment--strategy--constraint))
 - `parameters` (Map of String) Strategy parameters. All the values need to informed as strings.
-- `variant` (Block List) Feature strategy variant (see [below for nested schema](#nestedblock--environment--strategy--variant))
+- `variant` (Block List) Feature strategy variant. The api returns them sorted by name, so if you see drifts, sort them by name when declaring them in the configuration as well. (see [below for nested schema](#nestedblock--environment--strategy--variant))
 
 Read-Only:
 

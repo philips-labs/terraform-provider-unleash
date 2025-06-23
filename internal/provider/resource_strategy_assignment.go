@@ -60,7 +60,7 @@ func resourceStrategyAssignment() *schema.Resource {
 				},
 			},
 			"variant": {
-				Description: "Feature variant",
+				Description: "Feature strategy variant. The api returns them sorted by name, so if you see drifts, sort them by name when declaring them in the configuration as well.",
 				Type:        schema.TypeList,
 				Optional:    true,
 				Elem: &schema.Resource{
@@ -180,7 +180,6 @@ func resourceStrategyAssignmentRead(ctx context.Context, d *schema.ResourceData,
 
 	projectId := d.Get("project_id").(string)
 	featureName := d.Get("feature_name").(string)
-	variants := d.Get("variant").([]interface{})
 
 	feature, _, err := client.FeatureToggles.GetFeatureByName(projectId, featureName)
 	if err != nil {
@@ -213,7 +212,7 @@ func resourceStrategyAssignmentRead(ctx context.Context, d *schema.ResourceData,
 						convertedParams[param.Name] = retrievedParams.(map[string]interface{})[param.Name].(string)
 					}
 					_ = d.Set("parameters", convertedParams)
-					_ = d.Set("variant", flattenVariants(variants, featureStrategy.Variants))
+					_ = d.Set("variant", flattenVariants(featureStrategy.Variants))
 				}
 			}
 			break
@@ -312,36 +311,31 @@ func toFeatureVariant(tfVariant map[string]interface{}) api.Variant {
 	return variant
 }
 
-func flattenVariants(tfVariants []interface{}, variantsFromApi []api.Variant) []interface{} {
-	apiVariantMap := make(map[string]api.Variant)
-	for _, v := range variantsFromApi {
-		apiVariantMap[v.Name] = v
+func flattenVariants(apiVariants []api.Variant) []interface{} {
+	if apiVariants == nil {
+		return []interface{}{}
 	}
 
-	result := make([]interface{}, 0, len(tfVariants))
-	for _, tfV := range tfVariants {
-		tfVariant := tfV.(map[string]interface{})
-		name := tfVariant["name"].(string)
+	vVariants := []interface{}{}
 
-		if apiVariant, exists := apiVariantMap[name]; exists {
-			flattened := map[string]interface{}{
-				"name":        apiVariant.Name,
-				"stickiness":  apiVariant.Stickiness,
-				"weight":      apiVariant.Weight,
-				"weight_type": apiVariant.WeightType,
-			}
+	for _, variant := range apiVariants {
+		mVariant := map[string]interface{}{}
+		mVariant["name"] = variant.Name
+		mVariant["weight"] = variant.Weight
+		mVariant["weight_type"] = variant.WeightType
+		mVariant["stickiness"] = variant.Stickiness
 
-			if apiVariant.Payload != nil {
-				payload := map[string]interface{}{
-					"type":  apiVariant.Payload.Type,
-					"value": apiVariant.Payload.Value,
-				}
-				flattened["payload"] = []interface{}{payload}
-			}
-
-			result = append(result, flattened)
+		if variant.Payload != nil {
+			mPayloads := []interface{}{}
+			mPayload := map[string]interface{}{}
+			mPayload["type"] = variant.Payload.Type
+			mPayload["value"] = variant.Payload.Value
+			mPayloads = append(mPayloads, mPayload)
+			mVariant["payload"] = mPayloads
 		}
+
+		vVariants = append(vVariants, mVariant)
 	}
 
-	return result
+	return vVariants
 }
