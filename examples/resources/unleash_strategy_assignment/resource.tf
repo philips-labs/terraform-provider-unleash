@@ -22,4 +22,14 @@ resource "unleash_strategy_assignment" "example" {
     stickiness = "random"
     groupId    = "toggle"
   }
+  variant {
+    name = "a"
+  }
+  variant {
+    name = "b" # if you see drifts with multiple variants, sort them by name.
+    payload {
+      type  = "string"
+      value = "foo"
+    }
+  }
 }

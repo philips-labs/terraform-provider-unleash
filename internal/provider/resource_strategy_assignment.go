@@ -6,7 +6,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/philips-labs/go-unleash-api/api"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/philips-labs/go-unleash-api/v2/api"
 )
 
 func resourceStrategyAssignment() *schema.Resource {
@@ -58,6 +59,58 @@ func resourceStrategyAssignment() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"variant": {
+				Description: "Feature strategy variant. The api returns them sorted by name, so if you see drifts, sort them by name when declaring them in the configuration as well.",
+				Type:        schema.TypeList,
+				Optional:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Description: "Variant name",
+							Type:        schema.TypeString,
+							Required:    true,
+						},
+						"stickiness": {
+							Description: "Variant stickiness. Default is `default`.",
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "default",
+						},
+						"weight": {
+							Description:  "Variant weight. Only considered when the `weight_type` is `fix`. It is calculated automatically if the `weight_type` is `variable`.",
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validation.IntBetween(0, 1000),
+						},
+						"weight_type": {
+							Description: "Variant weight type. The weight type can be `fix` or `variable`. Default is `variable`.",
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "variable",
+						},
+						"payload": {
+							Description: "Variant payload. The type of the payload can be `string`, `json` or `csv` or `number`",
+							Type:        schema.TypeSet,
+							Optional:    true,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"type": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"value": {
+										Type:        schema.TypeString,
+										Description: "Always a string value, independent of the type.",
+										Required:    true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -93,6 +146,15 @@ func resourceStrategyAssignmentCreate(ctx context.Context, d *schema.ResourceDat
 		}
 
 		featureStrategy.Parameters = convertedParams
+	}
+
+	if p, ok := d.GetOk("variant"); ok {
+		tfVariants := p.([]interface{})
+		variants := make([]api.Variant, 0, len(tfVariants))
+		for _, tfVariant := range tfVariants {
+			variants = append(variants, toFeatureVariant(tfVariant.(map[string]interface{})))
+		}
+		featureStrategy.Variants = variants
 	}
 
 	addedStrategy, resp, err := client.FeatureToggles.AddStrategyToFeature(projectId, featureName, environment, *featureStrategy)
@@ -150,6 +212,7 @@ func resourceStrategyAssignmentRead(ctx context.Context, d *schema.ResourceData,
 						convertedParams[param.Name] = retrievedParams.(map[string]interface{})[param.Name].(string)
 					}
 					_ = d.Set("parameters", convertedParams)
+					_ = d.Set("variant", flattenVariants(featureStrategy.Variants))
 				}
 			}
 			break
@@ -193,6 +256,15 @@ func resourceStrategyAssignmentUpdate(ctx context.Context, d *schema.ResourceDat
 		strategy.Parameters = convertedParams
 	}
 
+	if d.HasChange("variant") {
+		tfVariants := d.Get("variant").([]interface{})
+		variants := make([]api.Variant, 0, len(tfVariants))
+		for _, tfVariant := range tfVariants {
+			variants = append(variants, toFeatureVariant(tfVariant.(map[string]interface{})))
+		}
+		strategy.Variants = variants
+	}
+
 	_, resp, err := client.FeatureToggles.UpdateFeatureStrategy(projectId, featureName, environment, *strategy)
 	if resp == nil {
 		return diag.FromErr(fmt.Errorf("response is nil: %v", err))
@@ -219,4 +291,51 @@ func resourceStrategyAssignmentDelete(ctx context.Context, d *schema.ResourceDat
 	}
 	d.SetId("")
 	return diags
+}
+
+func toFeatureVariant(tfVariant map[string]interface{}) api.Variant {
+	variant := api.Variant{}
+	variant.Name = tfVariant["name"].(string)
+	variant.Stickiness = tfVariant["stickiness"].(string)
+	variant.Weight = tfVariant["weight"].(int)
+	variant.WeightType = tfVariant["weight_type"].(string)
+
+	if payloadSet, ok := tfVariant["payload"].(*schema.Set); ok && payloadSet.Len() > 0 {
+		payloadList := payloadSet.List()
+		payloadMap := payloadList[0].(map[string]interface{})
+		variant.Payload = &api.VariantPayload{
+			Type:  payloadMap["type"].(string),
+			Value: payloadMap["value"].(string),
+		}
+	}
+	return variant
+}
+
+func flattenVariants(apiVariants []api.Variant) []interface{} {
+	if apiVariants == nil {
+		return []interface{}{}
+	}
+
+	vVariants := []interface{}{}
+
+	for _, variant := range apiVariants {
+		mVariant := map[string]interface{}{}
+		mVariant["name"] = variant.Name
+		mVariant["weight"] = variant.Weight
+		mVariant["weight_type"] = variant.WeightType
+		mVariant["stickiness"] = variant.Stickiness
+
+		if variant.Payload != nil {
+			mPayloads := []interface{}{}
+			mPayload := map[string]interface{}{}
+			mPayload["type"] = variant.Payload.Type
+			mPayload["value"] = variant.Payload.Value
+			mPayloads = append(mPayloads, mPayload)
+			mVariant["payload"] = mPayloads
+		}
+
+		vVariants = append(vVariants, mVariant)
+	}
+
+	return vVariants
 }

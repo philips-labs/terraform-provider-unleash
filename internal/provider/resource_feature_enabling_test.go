@@ -37,9 +37,9 @@ resource "unleash_strategy_assignment" "foo" {
 	feature_name  = unleash_feature.foo.name
 	project_id    = "default"
 	environment   = "development"
-	strategy_name = "userWithId"
+	strategy_name = "remoteAddress"
 	parameters = {
-	  userIds    = "xyz,bar"
+	  IPs    = "xyz,bar"
 	}
 }
 resource "unleash_feature_enabling" "foo" {

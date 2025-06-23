@@ -39,6 +39,13 @@ resource "unleash_feature_v2" "with_env_strategies" {
         stickiness = "random"
         groupId    = "toggle"
       }
+      variant {
+        name = "a" # if you see drifts with multiple variants, sort them by name.
+        payload {
+          type  = "string"
+          value = "foo"
+        }
+      }
     }
   }
 

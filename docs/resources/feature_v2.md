@@ -54,6 +54,13 @@ resource "unleash_feature_v2" "with_env_strategies" {
         stickiness = "random"
         groupId    = "toggle"
       }
+      variant {
+        name = "a" # if you see drifts with multiple variants, sort them by name.
+        payload {
+          type  = "string"
+          value = "foo"
+        }
+      }
     }
   }
 
@@ -84,7 +91,6 @@ resource "unleash_feature_v2" "with_env_strategies" {
 - `description` (String) Feature description
 - `environment` (Block List) Use this to enable a feature in an environment and add strategies (see [below for nested schema](#nestedblock--environment))
 - `tag` (Block List) Tag to add to the feature (see [below for nested schema](#nestedblock--tag))
-- `variant` (Block List) Feature variant (see [below for nested schema](#nestedblock--variant))
 
 ### Read-Only
 
@@ -113,6 +119,7 @@ Optional:
 
 - `constraint` (Block List) Strategy constraint (see [below for nested schema](#nestedblock--environment--strategy--constraint))
 - `parameters` (Map of String) Strategy parameters. All the values need to informed as strings.
+- `variant` (Block List) Feature strategy variant. The api returns them sorted by name, so if you see drifts, sort them by name when declaring them in the configuration as well. (see [below for nested schema](#nestedblock--environment--strategy--variant))
 
 Read-Only:
 
@@ -134,6 +141,30 @@ Optional:
 - `values` (List of String) List of values to use in the evaluation of the constraint. Applies to all operators, except `DATE_`, `NUM_` and `SEMVER_`.
 
 
+<a id="nestedblock--environment--strategy--variant"></a>
+### Nested Schema for `environment.strategy.variant`
+
+Required:
+
+- `name` (String) Variant name
+
+Optional:
+
+- `payload` (Block Set, Max: 1) Variant payload. The type of the payload can be `string`, `json` or `csv` or `number` (see [below for nested schema](#nestedblock--environment--strategy--variant--payload))
+- `stickiness` (String) Variant stickiness. Default is `default`.
+- `weight` (Number) Variant weight. Only considered when the `weight_type` is `fix`. It is calculated automatically if the `weight_type` is `variable`.
+- `weight_type` (String) Variant weight type. The weight type can be `fix` or `variable`. Default is `variable`.
+
+<a id="nestedblock--environment--strategy--variant--payload"></a>
+### Nested Schema for `environment.strategy.variant.payload`
+
+Required:
+
+- `type` (String)
+- `value` (String) Always a string value, independent of the type.
+
+
+
 
 
 <a id="nestedblock--tag"></a>
@@ -146,36 +177,3 @@ Required:
 Optional:
 
 - `type` (String) Tag type. Default is `simple`.
-
-
-<a id="nestedblock--variant"></a>
-### Nested Schema for `variant`
-
-Required:
-
-- `name` (String) Variant name
-
-Optional:
-
-- `overrides` (Block Set) Overrides existing context field values. Values are comma separated e.g `v1, v2, ...`) (see [below for nested schema](#nestedblock--variant--overrides))
-- `payload` (Block Set, Max: 1) Variant payload. The type of the payload can be `string`, `json` or `csv` (see [below for nested schema](#nestedblock--variant--payload))
-- `stickiness` (String) Variant stickiness. Default is `default`.
-- `weight` (Number) Variant weight. Only considered when the `weight_type` is `fix`. It is calculated automatically if the `weight_type` is `variable`.
-- `weight_type` (String) Variant weight type. The weight type can be `fix` or `variable`. Default is `variable`.
-
-<a id="nestedblock--variant--overrides"></a>
-### Nested Schema for `variant.overrides`
-
-Required:
-
-- `context_name` (String)
-- `values` (List of String)
-
-
-<a id="nestedblock--variant--payload"></a>
-### Nested Schema for `variant.payload`
-
-Required:
-
-- `type` (String)
-- `value` (String)
