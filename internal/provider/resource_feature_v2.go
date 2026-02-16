@@ -145,10 +145,10 @@ func resourceFeatureV2() *schema.Resource {
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"context_name": {
-													Description:  "Constraint context. Can be `appName`, `currentTime`, `environment`, `sessionId` or `userId`",
+													Description:  "Constraint context. Can be `appName`, `currentTime`, `environment`, `remoteAddress`, `sessionId` or `userId`",
 													Type:         schema.TypeString,
 													Required:     true,
-													ValidateFunc: validation.StringInSlice([]string{"appName", "currentTime", "environment", "sessionId", "userId"}, false),
+													ValidateFunc: validation.StringInSlice([]string{"appName", "currentTime", "environment", "remoteAddress", "sessionId", "userId"}, false),
 												},
 												"operator": {
 													Description:  "Constraint operator. Can be `IN`, `NOT_IN`, `STR_CONTAINS`, `STR_STARTS_WITH`, `STR_ENDS_WITH`, `NUM_EQ`, `NUM_GT`, `NUM_GTE`, `NUM_LT`, `NUM_LTE`, `SEMVER_EQ`, `SEMVER_GT` or `SEMVER_LT`",
