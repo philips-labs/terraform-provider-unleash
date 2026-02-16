@@ -43,6 +43,10 @@ func TestAccResourceFeatureV2(t *testing.T) {
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.0.case_insensitive", "false"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.0.inverted", "false"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.0.value", "1"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.1.context_name", "remoteAddress"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.1.operator", "IN"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.1.values.0", "dev.philips.com"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.strategy.1.constraint.1.values.1", "customer.philips.com"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "tag.0.type", "simple"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "tag.0.value", "value"),
 				),
@@ -94,6 +98,11 @@ resource "unleash_feature_v2" "foo" {
 				case_insensitive = false
 				inverted = false
 				value = "1"
+			}
+			constraint {
+				context_name = "remoteAddress"
+				operator = "IN"
+				values = ["dev.philips.com", "customer.philips.com"]
 			}
 			parameters = {
 				rollout    = "68"
