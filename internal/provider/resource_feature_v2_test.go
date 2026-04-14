@@ -22,6 +22,7 @@ func TestAccResourceFeatureV2(t *testing.T) {
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "type", "release"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "project_id", "default"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "archive_on_destroy", "false"),
+					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "impression_data", "false"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.0.name", "production"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.0.enabled", "false"),
 					resource.TestCheckResourceAttr("unleash_feature_v2.foo", "environment.1.name", "development"),
@@ -62,16 +63,17 @@ resource "unleash_feature_v2" "foo" {
 	type               = "release"
 	project_id         = "default"
 	archive_on_destroy = false
-  
+	impression_data    = false
+
 	environment {
 	  name    = "production"
 	  enabled = false
 	}
-  
+
 	environment {
 	  name    = "development"
 	  enabled = true
-  
+
 	  strategy {
 			name = "remoteAddress"
 			parameters = {
@@ -79,7 +81,7 @@ resource "unleash_feature_v2" "foo" {
 			}
 			variant {
 				name = "a"
-			}				
+			}
 			variant {
 				name = "b"
 				weight = 500

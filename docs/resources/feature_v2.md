@@ -89,6 +89,7 @@ resource "unleash_feature_v2" "with_env_strategies" {
 ### Optional
 
 - `archive_on_destroy` (Boolean) Whether to archive the feature toggle on destroy. Default is `true`. When `false`, it will permanently delete the feature toggle.
+- `impression_data` (Boolean) Whether to enable impression data for this feature. Default is `false`.
 - `description` (String) Feature description
 - `environment` (Block List) Use this to enable a feature in an environment and add strategies (see [below for nested schema](#nestedblock--environment))
 - `tag` (Block List) Tag to add to the feature (see [below for nested schema](#nestedblock--tag))

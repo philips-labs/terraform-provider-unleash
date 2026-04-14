@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.19.4
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1
-	github.com/philips-labs/go-unleash-api/v2 v2.0.1
+	github.com/philips-labs/go-unleash-api/v2 v2.1.0
 )
 
 require (
@@ -17,6 +17,7 @@ require (
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/hashicorp/cli v1.1.6 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/philips-labs/go-unleash-api v1.0.7 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/yuin/goldmark v1.7.1 // indirect

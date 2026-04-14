@@ -50,6 +50,12 @@ func resourceFeatureV2() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
+			"impression_data": {
+				Description: "Whether to enable impression data for this feature. Default is `false`.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+			},
 			"environment": {
 				Description: "Use this to enable a feature in an environment and add strategies",
 				Type:        schema.TypeList,
@@ -225,10 +231,11 @@ func resourceFeatureV2Create(ctx context.Context, d *schema.ResourceData, meta i
 	var diags diag.Diagnostics
 
 	feature := &api.FeatureToggle{
-		Name:        d.Get("name").(string),
-		Description: d.Get("description").(string),
-		Type:        d.Get("type").(string),
-		Project:     d.Get("project_id").(string),
+		Name:           d.Get("name").(string),
+		Description:    d.Get("description").(string),
+		Type:           d.Get("type").(string),
+		Project:        d.Get("project_id").(string),
+		ImpressionData: d.Get("impression_data").(bool),
 	}
 
 	createdFeature, resp, err := client.FeatureToggles.CreateFeature(feature.Project, *feature)
@@ -303,6 +310,7 @@ func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta int
 	_ = d.Set("description", feature.Description)
 	_ = d.Set("type", feature.Type)
 	_ = d.Set("project_id", feature.Project)
+	_ = d.Set("impression_data", feature.ImpressionData)
 
 	if e, ok := d.GetOk("environment"); ok {
 		toSave := []api.Environment{}
@@ -342,10 +350,11 @@ func resourceFeatureV2Update(ctx context.Context, d *schema.ResourceData, meta i
 	var diags diag.Diagnostics
 
 	feature := &api.FeatureToggle{
-		Name:        d.Get("name").(string),
-		Description: d.Get("description").(string),
-		Type:        d.Get("type").(string),
-		Project:     d.Get("project_id").(string),
+		Name:           d.Get("name").(string),
+		Description:    d.Get("description").(string),
+		Type:           d.Get("type").(string),
+		Project:        d.Get("project_id").(string),
+		ImpressionData: d.Get("impression_data").(bool),
 	}
 
 	_, resp, err := client.FeatureToggles.UpdateFeature(feature.Project, *feature)
