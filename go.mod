@@ -1,6 +1,6 @@
 module github.com/philips-labs/terraform-provider-unleash
 
-go 1.21
+go 1.25
 
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.19.4
