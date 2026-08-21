@@ -128,7 +128,7 @@ func dataSourceApiTokensRead(ctx context.Context, d *schema.ResourceData, meta i
 func buildId(tokenName string, projects []string) string {
 	projectsStr := strings.Join(projects[:], ",")
 	query := tokenName + projectsStr
-	return toMD5Str(query)
+	return toSHA256Str(query)
 }
 
 func toInterfaceArr(stringArr []string) []interface{} {

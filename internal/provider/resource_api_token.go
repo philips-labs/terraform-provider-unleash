@@ -2,7 +2,7 @@ package provider
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -107,7 +107,7 @@ func resourceApiTokenCreate(ctx context.Context, d *schema.ResourceData, meta in
 
 	_ = d.Set("secret", createdToken.Secret)
 	_ = d.Set("created_at", createdToken.CreatedAt.Format(time.RFC3339))
-	d.SetId(toMD5Str(createdToken.Secret))
+	d.SetId(toSHA256Str(createdToken.Secret))
 	readDiags := resourceApiTokenRead(ctx, d, meta)
 	if readDiags != nil {
 		diags = append(diags, readDiags...)
@@ -198,8 +198,8 @@ func toStringArr(tfList []interface{}) []string {
 	return stringArr
 }
 
-func toMD5Str(str string) string {
-	hasher := md5.New()
+func toSHA256Str(str string) string {
+	hasher := sha256.New()
 	hasher.Write([]byte(str))
-	return hex.EncodeToString(hasher.Sum([]byte{}))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
