@@ -153,7 +153,7 @@ func resourceFeatureV2() *schema.Resource {
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"context_name": {
-													Description: "Constraint context name. Must be a context field defined in Unleash.",
+													Description: "Constraint context name. Must be a context field defined in Unleash or one of the built-in values: `appName`, `currentTime`, `environment`, `remoteAddress`, `sessionId`, `userId`.",
 													Type:        schema.TypeString,
 													Required:    true,
 												},
@@ -703,26 +703,9 @@ func toFeatureTag(tfTag map[string]interface{}) api.FeatureTag {
 }
 
 func validateConstraintContextNames(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
-	client := meta.(*ApiClients).UnleashClient
-
-	contextFields, _, err := client.ContextAPI.GetContextFields(ctx).Execute()
-	if err != nil {
-		return fmt.Errorf("failed to fetch context fields from Unleash: %w", err)
-	}
-
-	validContexts := map[string]bool{
-		"appName":       true,
-		"currentTime":   true,
-		"environment":   true,
-		"remoteAddress": true,
-		"sessionId":     true,
-		"userId":        true,
-	}
-	for _, cf := range contextFields {
-		validContexts[cf.Name] = true
-	}
-
 	environments := d.Get("environment").([]interface{})
+
+	var validContexts map[string]bool
 	var invalid []string
 
 	for _, env := range environments {
@@ -736,9 +719,15 @@ func validateConstraintContextNames(ctx context.Context, d *schema.ResourceDiff,
 
 			constraints, _ := stratMap["constraint"].([]interface{})
 			for _, constr := range constraints {
-				constrMap := constr.(map[string]interface{})
-				contextName := constrMap["context_name"].(string)
+				if validContexts == nil {
+					var err error
+					validContexts, err = meta.(*ApiClients).GetValidContextNames(ctx)
+					if err != nil {
+						return err
+					}
+				}
 
+				contextName := constr.(map[string]interface{})["context_name"].(string)
 				if !validContexts[contextName] {
 					invalid = append(invalid, fmt.Sprintf("%q (environment %q, strategy %q)", contextName, envName, stratName))
 				}
