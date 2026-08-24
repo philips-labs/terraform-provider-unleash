@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -704,8 +705,23 @@ func toFeatureTag(tfTag map[string]interface{}) api.FeatureTag {
 
 func validateConstraintContextNames(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
 	environments := d.Get("environment").([]interface{})
+	if len(environments) == 0 {
+		return nil
+	}
 
-	var validContexts map[string]bool
+	clients, ok := meta.(*ApiClients)
+	if !ok || clients == nil {
+		return nil
+	}
+
+	validContexts, err := clients.GetValidContextNames(ctx)
+	if err != nil {
+		tflog.Warn(ctx, "Skipping context name validation: unable to fetch context fields from Unleash", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return nil
+	}
+
 	var invalid []string
 
 	for _, env := range environments {
@@ -719,14 +735,6 @@ func validateConstraintContextNames(ctx context.Context, d *schema.ResourceDiff,
 
 			constraints, _ := stratMap["constraint"].([]interface{})
 			for _, constr := range constraints {
-				if validContexts == nil {
-					var err error
-					validContexts, err = meta.(*ApiClients).GetValidContextNames(ctx)
-					if err != nil {
-						return err
-					}
-				}
-
 				contextName := constr.(map[string]interface{})["context_name"].(string)
 				if !validContexts[contextName] {
 					invalid = append(invalid, fmt.Sprintf("%q (environment %q, strategy %q)", contextName, envName, stratName))
