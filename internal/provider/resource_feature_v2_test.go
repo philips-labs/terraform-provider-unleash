@@ -261,7 +261,7 @@ func createContextField(t *testing.T, name string) {
 	authToken := os.Getenv("UNLEASH_AUTH_TOKEN")
 
 	body := fmt.Sprintf(`{"name": "%s", "description": "test context field"}`, name)
-	req, err := http.NewRequest("POST", apiURL+"/admin/context", strings.NewReader(body))
+	req, err := http.NewRequest("POST", strings.TrimRight(apiURL, "/")+"/admin/context", strings.NewReader(body))
 	if err != nil {
 		t.Fatalf("failed to create request: %v", err)
 	}
