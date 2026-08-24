@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -19,6 +20,7 @@ func resourceFeatureV2() *schema.Resource {
 		ReadContext:   resourceFeatureV2Read,
 		UpdateContext: resourceFeatureV2Update,
 		DeleteContext: resourceFeatureV2Delete,
+		CustomizeDiff: validateConstraintContextNames,
 
 		// The descriptions are used by the documentation generator and the language server.
 		Schema: map[string]*schema.Schema{
@@ -151,10 +153,9 @@ func resourceFeatureV2() *schema.Resource {
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"context_name": {
-													Description:  "Constraint context. Can be `appName`, `currentTime`, `environment`, `remoteAddress`, `sessionId` or `userId`",
-													Type:         schema.TypeString,
-													Required:     true,
-													ValidateFunc: validation.StringInSlice([]string{"appName", "currentTime", "environment", "remoteAddress", "sessionId", "userId"}, false),
+													Description: "Constraint context name. Must be a context field defined in Unleash.",
+													Type:        schema.TypeString,
+													Required:    true,
 												},
 												"operator": {
 													Description:  "Constraint operator. Can be `IN`, `NOT_IN`, `STR_CONTAINS`, `STR_STARTS_WITH`, `STR_ENDS_WITH`, `NUM_EQ`, `NUM_GT`, `NUM_GTE`, `NUM_LT`, `NUM_LTE`, `SEMVER_EQ`, `SEMVER_GT` or `SEMVER_LT`",
@@ -699,4 +700,55 @@ func toFeatureTag(tfTag map[string]interface{}) api.FeatureTag {
 	tag.Type = tfTag["type"].(string)
 	tag.Value = tfTag["value"].(string)
 	return tag
+}
+
+func validateConstraintContextNames(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	client := meta.(*ApiClients).UnleashClient
+
+	contextFields, _, err := client.ContextAPI.GetContextFields(ctx).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to fetch context fields from Unleash: %w", err)
+	}
+
+	validContexts := map[string]bool{
+		"appName":       true,
+		"currentTime":   true,
+		"environment":   true,
+		"remoteAddress": true,
+		"sessionId":     true,
+		"userId":        true,
+	}
+	for _, cf := range contextFields {
+		validContexts[cf.Name] = true
+	}
+
+	environments := d.Get("environment").([]interface{})
+	var invalid []string
+
+	for _, env := range environments {
+		envMap := env.(map[string]interface{})
+		envName := envMap["name"].(string)
+
+		strategies, _ := envMap["strategy"].([]interface{})
+		for _, strat := range strategies {
+			stratMap := strat.(map[string]interface{})
+			stratName := stratMap["name"].(string)
+
+			constraints, _ := stratMap["constraint"].([]interface{})
+			for _, constr := range constraints {
+				constrMap := constr.(map[string]interface{})
+				contextName := constrMap["context_name"].(string)
+
+				if !validContexts[contextName] {
+					invalid = append(invalid, fmt.Sprintf("%q (environment %q, strategy %q)", contextName, envName, stratName))
+				}
+			}
+		}
+	}
+
+	if len(invalid) > 0 {
+		return fmt.Errorf("unknown context fields: %s", strings.Join(invalid, ", "))
+	}
+
+	return nil
 }
