@@ -1,14 +1,19 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"regexp"
 	"strings"
 	"testing"
 
+	openapiclient "github.com/Unleash/unleash-server-api-go/client"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/philips-labs/terraform-provider-unleash/utils"
 )
 
@@ -254,6 +259,132 @@ resource "unleash_feature_v2" "invalid_ctx" {
 	})
 }
 
+func TestAccResourceFeatureV2_apiUnavailableBuiltinAccepted(t *testing.T) {
+	featureName := fmt.Sprintf("api_down_builtin_%s", utils.RandomString(4))
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"unleash": func() (*schema.Provider, error) {
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if strings.Contains(r.URL.Path, "/api/admin/context") {
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte("{}"))
+				}))
+				t.Cleanup(srv.Close)
+
+				p := New("test")()
+				p.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+					unleashConfig := openapiclient.NewConfiguration()
+					unleashConfig.Servers = openapiclient.ServerConfigurations{
+						openapiclient.ServerConfiguration{URL: srv.URL},
+					}
+					return &ApiClients{
+						UnleashClient: openapiclient.NewAPIClient(unleashConfig),
+					}, nil
+				}
+				return p, nil
+			},
+		},
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+resource "unleash_feature_v2" "builtin_ok" {
+  name               = "%s"
+  type               = "release"
+  project_id         = "default"
+  archive_on_destroy = true
+
+  environment {
+    name    = "development"
+    enabled = true
+
+    strategy {
+      name = "flexibleRollout"
+      constraint {
+        context_name = "userId"
+        operator     = "IN"
+        values       = ["user1"]
+      }
+      parameters = {
+        rollout    = "100"
+        stickiness = "default"
+        groupId    = "toggle"
+      }
+    }
+  }
+}`, featureName),
+					PlanOnly: true,
+				},
+			},
+		})
+}
+
+func TestAccResourceFeatureV2_apiUnavailableCustomRejected(t *testing.T) {
+	featureName := fmt.Sprintf("api_down_custom_%s", utils.RandomString(4))
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"unleash": func() (*schema.Provider, error) {
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if strings.Contains(r.URL.Path, "/api/admin/context") {
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte("{}"))
+				}))
+				t.Cleanup(srv.Close)
+
+				p := New("test")()
+				p.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+					unleashConfig := openapiclient.NewConfiguration()
+					unleashConfig.Servers = openapiclient.ServerConfigurations{
+						openapiclient.ServerConfiguration{URL: srv.URL},
+					}
+					return &ApiClients{
+						UnleashClient: openapiclient.NewAPIClient(unleashConfig),
+					}, nil
+				}
+				return p, nil
+			},
+		},
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+resource "unleash_feature_v2" "custom_fail" {
+  name               = "%s"
+  type               = "release"
+  project_id         = "default"
+  archive_on_destroy = true
+
+  environment {
+    name    = "development"
+    enabled = true
+
+    strategy {
+      name = "flexibleRollout"
+      constraint {
+        context_name = "myCustomField"
+        operator     = "IN"
+        values       = ["val1"]
+      }
+      parameters = {
+        rollout    = "100"
+        stickiness = "default"
+        groupId    = "toggle"
+      }
+    }
+  }
+}`, featureName),
+				ExpectError: regexp.MustCompile(`cannot validate custom context fields.*"myCustomField".*failed to fetch context fields`),
+			},
+		},
+	})
+}
+
 func createContextField(t *testing.T, name string) {
 	t.Helper()
 
@@ -277,4 +408,20 @@ func createContextField(t *testing.T, name string) {
 	if resp.StatusCode != 201 {
 		t.Fatalf("failed to create context field %q: status %d", name, resp.StatusCode)
 	}
+
+	t.Cleanup(func() {
+		delReq, err := http.NewRequest("DELETE", strings.TrimRight(apiURL, "/")+"/admin/context/"+name, nil)
+		if err != nil {
+			t.Logf("failed to build delete request for context field %q: %v", name, err)
+			return
+		}
+		delReq.Header.Set("Authorization", authToken)
+
+		delResp, err := http.DefaultClient.Do(delReq)
+		if err != nil {
+			t.Logf("failed to delete context field %q: %v", name, err)
+			return
+		}
+		delResp.Body.Close()
+	})
 }

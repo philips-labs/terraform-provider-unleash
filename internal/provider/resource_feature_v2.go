@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -713,24 +712,36 @@ func validateConstraintContextNames(ctx context.Context, d *schema.ResourceDiff,
 	}
 
 	var refs []constraintRef
-	for _, env := range environments {
-		envMap := env.(map[string]interface{})
-		envName := envMap["name"].(string)
+	for i, env := range environments {
+		envMap, ok := env.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		envName, _ := envMap["name"].(string)
 
 		strategies, _ := envMap["strategy"].([]interface{})
-		for _, strat := range strategies {
-			stratMap := strat.(map[string]interface{})
-			stratName := stratMap["name"].(string)
+		for j, strat := range strategies {
+			stratMap, ok := strat.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			stratName, _ := stratMap["name"].(string)
 
 			constraints, _ := stratMap["constraint"].([]interface{})
-			for _, constr := range constraints {
+			for k, constr := range constraints {
 				constrMap, ok := constr.(map[string]interface{})
 				if !ok {
 					continue
 				}
+
+				contextNameKey := fmt.Sprintf("environment.%d.strategy.%d.constraint.%d.context_name", i, j, k)
+				if !d.NewValueKnown(contextNameKey) {
+					continue
+				}
+
 				contextName, _ := constrMap["context_name"].(string)
 				if contextName == "" {
-					continue
+					return fmt.Errorf("context_name must not be empty (environment %q, strategy %q)", envName, stratName)
 				}
 				refs = append(refs, constraintRef{contextName, envName, stratName})
 			}
@@ -741,6 +752,17 @@ func validateConstraintContextNames(ctx context.Context, d *schema.ResourceDiff,
 		return nil
 	}
 
+	allBuiltin := true
+	for _, ref := range refs {
+		if !builtinContextFields[ref.contextName] {
+			allBuiltin = false
+			break
+		}
+	}
+	if allBuiltin {
+		return nil
+	}
+
 	clients, ok := meta.(*ApiClients)
 	if !ok || clients == nil {
 		return nil
@@ -748,9 +770,15 @@ func validateConstraintContextNames(ctx context.Context, d *schema.ResourceDiff,
 
 	validContexts, err := clients.GetValidContextNames(ctx)
 	if err != nil {
-		tflog.Warn(ctx, "Skipping context name validation: unable to fetch context fields from Unleash", map[string]interface{}{
-			"error": err.Error(),
-		})
+		var unverifiable []string
+		for _, ref := range refs {
+			if !builtinContextFields[ref.contextName] {
+				unverifiable = append(unverifiable, fmt.Sprintf("%q (environment %q, strategy %q)", ref.contextName, ref.envName, ref.stratName))
+			}
+		}
+		if len(unverifiable) > 0 {
+			return fmt.Errorf("cannot validate custom context fields %s: %w", strings.Join(unverifiable, ", "), err)
+		}
 		return nil
 	}
 

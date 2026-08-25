@@ -9,6 +9,15 @@ import (
 	"github.com/philips-labs/go-unleash-api/v2/api"
 )
 
+var builtinContextFields = map[string]bool{
+	"appName":       true,
+	"currentTime":   true,
+	"environment":   true,
+	"remoteAddress": true,
+	"sessionId":     true,
+	"userId":        true,
+}
+
 type ApiClients struct {
 	PhilipsUnleashClient *api.ApiClient
 	UnleashClient        *client.APIClient
@@ -30,17 +39,8 @@ func (c *ApiClients) GetValidContextNames(ctx context.Context) (map[string]bool,
 		return nil, fmt.Errorf("failed to fetch context fields from Unleash: %w", err)
 	}
 
-	builtins := map[string]bool{
-		"appName":       true,
-		"currentTime":   true,
-		"environment":   true,
-		"remoteAddress": true,
-		"sessionId":     true,
-		"userId":        true,
-	}
-
-	c.contextFieldsCache = make(map[string]bool, len(builtins)+len(contextFields))
-	for k, v := range builtins {
+	c.contextFieldsCache = make(map[string]bool, len(builtinContextFields)+len(contextFields))
+	for k, v := range builtinContextFields {
 		c.contextFieldsCache[k] = v
 	}
 	for _, cf := range contextFields {
