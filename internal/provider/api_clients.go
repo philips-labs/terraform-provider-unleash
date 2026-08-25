@@ -19,11 +19,10 @@ type ApiClients struct {
 
 func (c *ApiClients) GetValidContextNames(ctx context.Context) (map[string]bool, error) {
 	c.contextFieldsMu.Lock()
-	cache := c.contextFieldsCache
-	c.contextFieldsMu.Unlock()
+	defer c.contextFieldsMu.Unlock()
 
-	if cache != nil {
-		return cache, nil
+	if c.contextFieldsCache != nil {
+		return c.contextFieldsCache, nil
 	}
 
 	contextFields, _, err := c.UnleashClient.ContextAPI.GetContextFields(ctx).Execute()
@@ -40,20 +39,13 @@ func (c *ApiClients) GetValidContextNames(ctx context.Context) (map[string]bool,
 		"userId":        true,
 	}
 
-	newCache := make(map[string]bool, len(builtins)+len(contextFields))
+	c.contextFieldsCache = make(map[string]bool, len(builtins)+len(contextFields))
 	for k, v := range builtins {
-		newCache[k] = v
+		c.contextFieldsCache[k] = v
 	}
 	for _, cf := range contextFields {
-		newCache[cf.Name] = true
+		c.contextFieldsCache[cf.Name] = true
 	}
 
-	c.contextFieldsMu.Lock()
-	if c.contextFieldsCache == nil {
-		c.contextFieldsCache = newCache
-	}
-	result := c.contextFieldsCache
-	c.contextFieldsMu.Unlock()
-
-	return result, nil
+	return c.contextFieldsCache, nil
 }
