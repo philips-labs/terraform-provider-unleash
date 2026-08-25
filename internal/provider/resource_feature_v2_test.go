@@ -316,7 +316,8 @@ resource "unleash_feature_v2" "builtin_ok" {
     }
   }
 }`, featureName),
-					PlanOnly: true,
+					PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 				},
 			},
 		})
