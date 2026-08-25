@@ -705,7 +705,39 @@ func toFeatureTag(tfTag map[string]interface{}) api.FeatureTag {
 
 func validateConstraintContextNames(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
 	environments := d.Get("environment").([]interface{})
-	if len(environments) == 0 {
+
+	type constraintRef struct {
+		contextName string
+		envName     string
+		stratName   string
+	}
+
+	var refs []constraintRef
+	for _, env := range environments {
+		envMap := env.(map[string]interface{})
+		envName := envMap["name"].(string)
+
+		strategies, _ := envMap["strategy"].([]interface{})
+		for _, strat := range strategies {
+			stratMap := strat.(map[string]interface{})
+			stratName := stratMap["name"].(string)
+
+			constraints, _ := stratMap["constraint"].([]interface{})
+			for _, constr := range constraints {
+				constrMap, ok := constr.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				contextName, _ := constrMap["context_name"].(string)
+				if contextName == "" {
+					continue
+				}
+				refs = append(refs, constraintRef{contextName, envName, stratName})
+			}
+		}
+	}
+
+	if len(refs) == 0 {
 		return nil
 	}
 
@@ -723,23 +755,9 @@ func validateConstraintContextNames(ctx context.Context, d *schema.ResourceDiff,
 	}
 
 	var invalid []string
-
-	for _, env := range environments {
-		envMap := env.(map[string]interface{})
-		envName := envMap["name"].(string)
-
-		strategies, _ := envMap["strategy"].([]interface{})
-		for _, strat := range strategies {
-			stratMap := strat.(map[string]interface{})
-			stratName := stratMap["name"].(string)
-
-			constraints, _ := stratMap["constraint"].([]interface{})
-			for _, constr := range constraints {
-				contextName := constr.(map[string]interface{})["context_name"].(string)
-				if !validContexts[contextName] {
-					invalid = append(invalid, fmt.Sprintf("%q (environment %q, strategy %q)", contextName, envName, stratName))
-				}
-			}
+	for _, ref := range refs {
+		if !validContexts[ref.contextName] {
+			invalid = append(invalid, fmt.Sprintf("%q (environment %q, strategy %q)", ref.contextName, ref.envName, ref.stratName))
 		}
 	}
 
