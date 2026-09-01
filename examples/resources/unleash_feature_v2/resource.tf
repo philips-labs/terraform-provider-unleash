@@ -6,11 +6,6 @@ resource "unleash_feature_v2" "with_env_strategies" {
   archive_on_destroy = false
 
   environment {
-    name    = "production"
-    enabled = false
-  }
-
-  environment {
     name    = "development"
     enabled = true
 
@@ -49,13 +44,18 @@ resource "unleash_feature_v2" "with_env_strategies" {
     }
   }
 
-  tag {
-    type  = "simple"
-    value = "foo"
+  environment {
+    name    = "production"
+    enabled = false
   }
 
   tag {
     type  = "simple"
     value = "bar"
+  }
+
+  tag {
+    type  = "simple"
+    value = "foo"
   }
 }

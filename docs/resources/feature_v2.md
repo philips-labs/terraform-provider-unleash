@@ -21,11 +21,6 @@ resource "unleash_feature_v2" "with_env_strategies" {
   archive_on_destroy = false
 
   environment {
-    name    = "production"
-    enabled = false
-  }
-
-  environment {
     name    = "development"
     enabled = true
 
@@ -64,14 +59,19 @@ resource "unleash_feature_v2" "with_env_strategies" {
     }
   }
 
-  tag {
-    type  = "simple"
-    value = "foo"
+  environment {
+    name    = "production"
+    enabled = false
   }
 
   tag {
     type  = "simple"
     value = "bar"
+  }
+
+  tag {
+    type  = "simple"
+    value = "foo"
   }
 }
 ```
@@ -178,3 +178,16 @@ Required:
 Optional:
 
 - `type` (String) Tag type. Default is `simple`.
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# Import using the composite ID format: project_id/feature_name
+terraform import unleash_feature_v2.with_env_strategies default/my_nice_feature
+
+# Note: After import, environments are stored sorted alphabetically by name
+# and tags are sorted by type then value. Declare blocks in the same order
+# in your configuration to avoid ordering-only diffs.
+```
