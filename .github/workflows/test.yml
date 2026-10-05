@@ -76,9 +76,6 @@ jobs:
           terraform_version: ${{ matrix.terraform }}
           terraform_wrapper: false
 
-      - name: Start containers
-        run: docker compose up -d
-
       - name: Get dependencies
         run: |
           go mod download
@@ -87,12 +84,7 @@ jobs:
         timeout-minutes: 10
         env:
           TF_ACC: "1"
-          UNLEASH_API_URL: http://localhost:4242/api/
-          UNLEASH_AUTH_TOKEN: token
 
         run: |
           go test -v -cover ./internal/provider/
 
-      - name: Stop containers
-        if: always()
-        run: docker compose down
