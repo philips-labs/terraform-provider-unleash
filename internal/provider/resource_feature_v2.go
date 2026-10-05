@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -21,6 +22,10 @@ func resourceFeatureV2() *schema.Resource {
 		UpdateContext: resourceFeatureV2Update,
 		DeleteContext: resourceFeatureV2Delete,
 		CustomizeDiff: validateConstraintContextNames,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: resourceFeatureV2ImportState,
+		},
 
 		// The descriptions are used by the documentation generator and the language server.
 		Schema: map[string]*schema.Schema{
@@ -297,6 +302,10 @@ func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta int
 
 	var diags diag.Diagnostics
 
+	// name is Required and always present in state after Create or a previous Read.
+	// It is empty only when Read runs immediately after ImportState.
+	isImport := d.Get("name").(string) == ""
+
 	featureName := d.Id()
 	projectId := d.Get("project_id").(string)
 	feature, _, err := client.FeatureToggles.GetFeatureByName(projectId, featureName)
@@ -313,36 +322,76 @@ func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta int
 	_ = d.Set("project_id", feature.Project)
 	_ = d.Set("impression_data", feature.ImpressionData)
 
-	if e, ok := d.GetOk("environment"); ok {
-		toSave := []api.Environment{}
-		for _, tfEnvironment := range e.([]interface{}) {
-			for _, env := range feature.Environments {
-				if tfEnvironment.(map[string]interface{})["name"] == env.Name {
-					toSave = append(toSave, env)
-				}
-			}
-		}
-		_ = d.Set("environment", flattenEnvironments(toSave))
-	}
+	if isImport {
+		envs := feature.Environments
+		sort.Slice(envs, func(i, j int) bool {
+			return envs[i].Name < envs[j].Name
+		})
+		_ = d.Set("environment", flattenEnvironments(envs))
 
-	if t, ok := d.GetOk("tag"); ok {
 		featureTags, _, err := client.FeatureTags.GetAllFeatureTags(feature.Name)
-		if err != nil {
-			return diag.FromErr(err)
+		if err != nil && err != api.ErrNotFound {
+			return diag.FromErr(fmt.Errorf("unable to read tags for feature %s during import: %w", feature.Name, err))
 		}
-		toSave := []api.FeatureTag{}
-		for _, tfTag := range t.([]interface{}) {
-			for _, tag := range featureTags.Tags {
-				if tfTag.(map[string]interface{})["value"] == tag.Value {
-					toSave = append(toSave, tag)
+		var tags []api.FeatureTag
+		if featureTags != nil {
+			tags = featureTags.Tags
+		}
+		sort.Slice(tags, func(i, j int) bool {
+			if tags[i].Type != tags[j].Type {
+				return tags[i].Type < tags[j].Type
+			}
+			return tags[i].Value < tags[j].Value
+		})
+		_ = d.Set("tag", flattenTags(tags))
+	} else {
+		if e, ok := d.GetOk("environment"); ok {
+			toSave := []api.Environment{}
+			for _, tfEnvironment := range e.([]interface{}) {
+				for _, env := range feature.Environments {
+					if tfEnvironment.(map[string]interface{})["name"] == env.Name {
+						toSave = append(toSave, env)
+					}
 				}
 			}
+			_ = d.Set("environment", flattenEnvironments(toSave))
 		}
 
-		_ = d.Set("tag", flattenTags(toSave))
+		if t, ok := d.GetOk("tag"); ok {
+			featureTags, _, err := client.FeatureTags.GetAllFeatureTags(feature.Name)
+			if err != nil && err != api.ErrNotFound {
+				return diag.FromErr(err)
+			}
+			toSave := []api.FeatureTag{}
+			if featureTags == nil {
+				_ = d.Set("tag", flattenTags(toSave))
+				return diags
+			}
+			for _, tfTag := range t.([]interface{}) {
+				tfTagMap := tfTag.(map[string]interface{})
+				for _, tag := range featureTags.Tags {
+					if tfTagMap["type"] == tag.Type && tfTagMap["value"] == tag.Value {
+						toSave = append(toSave, tag)
+					}
+				}
+			}
+			_ = d.Set("tag", flattenTags(toSave))
+		}
 	}
 
 	return diags
+}
+
+func resourceFeatureV2ImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	parts := strings.Split(d.Id(), "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return nil, fmt.Errorf("unexpected format of ID (%q), expected project_id/feature_name", d.Id())
+	}
+	if err := d.Set("project_id", parts[0]); err != nil {
+		return nil, fmt.Errorf("error setting project_id: %w", err)
+	}
+	d.SetId(parts[1])
+	return []*schema.ResourceData{d}, nil
 }
 
 func resourceFeatureV2Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
