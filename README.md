@@ -30,15 +30,17 @@ Copy the resulting binary to the appropriate [plugin directory](https://www.terr
 
 In order to run the full suite of Acceptance tests, run `make testacc`.
 
-*Note:* Acceptance tests create real resources, so it requires access to a Unleash server.
-
-You can run the Unleash server locally using Docker, run `docker compose up -d`
-
-Then, run:
+*Note:* Acceptance tests create real resources and require [Docker](https://docs.docker.com/get-docker/) (or Docker Desktop) to be running. The test suite starts an Unleash server and Postgres automatically via [Testcontainers](https://testcontainers.com/) — no manual `docker compose` step needed.
 
 ```sh
+# Linux / macOS
 make testacc
+
+# Windows PowerShell
+$env:TF_ACC = "1"; go test -v ./internal/provider/ -timeout 120m
 ```
+
+To run against an existing Unleash instance instead, set `UNLEASH_API_URL` and `UNLEASH_AUTH_TOKEN` before running — the test suite will skip container startup when `UNLEASH_API_URL` is already set.
 
 ## Adding Dependencies
 

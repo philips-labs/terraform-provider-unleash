@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -19,6 +21,11 @@ func resourceFeatureV2() *schema.Resource {
 		ReadContext:   resourceFeatureV2Read,
 		UpdateContext: resourceFeatureV2Update,
 		DeleteContext: resourceFeatureV2Delete,
+		CustomizeDiff: validateConstraintContextNames,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: resourceFeatureV2ImportState,
+		},
 
 		// The descriptions are used by the documentation generator and the language server.
 		Schema: map[string]*schema.Schema{
@@ -151,10 +158,9 @@ func resourceFeatureV2() *schema.Resource {
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"context_name": {
-													Description:  "Constraint context. Can be `appName`, `currentTime`, `environment`, `remoteAddress`, `sessionId` or `userId`",
-													Type:         schema.TypeString,
-													Required:     true,
-													ValidateFunc: validation.StringInSlice([]string{"appName", "currentTime", "environment", "remoteAddress", "sessionId", "userId"}, false),
+													Description: "Constraint context name. Must be a context field defined in Unleash or one of the built-in values: `appName`, `currentTime`, `environment`, `remoteAddress`, `sessionId`, `userId`.",
+													Type:        schema.TypeString,
+													Required:    true,
 												},
 												"operator": {
 													Description:  "Constraint operator. Can be `IN`, `NOT_IN`, `STR_CONTAINS`, `STR_STARTS_WITH`, `STR_ENDS_WITH`, `NUM_EQ`, `NUM_GT`, `NUM_GTE`, `NUM_LT`, `NUM_LTE`, `SEMVER_EQ`, `SEMVER_GT` or `SEMVER_LT`",
@@ -296,6 +302,10 @@ func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta int
 
 	var diags diag.Diagnostics
 
+	// name is Required and always present in state after Create or a previous Read.
+	// It is empty only when Read runs immediately after ImportState.
+	isImport := d.Get("name").(string) == ""
+
 	featureName := d.Id()
 	projectId := d.Get("project_id").(string)
 	feature, _, err := client.FeatureToggles.GetFeatureByName(projectId, featureName)
@@ -312,36 +322,76 @@ func resourceFeatureV2Read(ctx context.Context, d *schema.ResourceData, meta int
 	_ = d.Set("project_id", feature.Project)
 	_ = d.Set("impression_data", feature.ImpressionData)
 
-	if e, ok := d.GetOk("environment"); ok {
-		toSave := []api.Environment{}
-		for _, tfEnvironment := range e.([]interface{}) {
-			for _, env := range feature.Environments {
-				if tfEnvironment.(map[string]interface{})["name"] == env.Name {
-					toSave = append(toSave, env)
-				}
-			}
-		}
-		_ = d.Set("environment", flattenEnvironments(toSave))
-	}
+	if isImport {
+		envs := feature.Environments
+		sort.Slice(envs, func(i, j int) bool {
+			return envs[i].Name < envs[j].Name
+		})
+		_ = d.Set("environment", flattenEnvironments(envs))
 
-	if t, ok := d.GetOk("tag"); ok {
 		featureTags, _, err := client.FeatureTags.GetAllFeatureTags(feature.Name)
-		if err != nil {
-			return diag.FromErr(err)
+		if err != nil && err != api.ErrNotFound {
+			return diag.FromErr(fmt.Errorf("unable to read tags for feature %s during import: %w", feature.Name, err))
 		}
-		toSave := []api.FeatureTag{}
-		for _, tfTag := range t.([]interface{}) {
-			for _, tag := range featureTags.Tags {
-				if tfTag.(map[string]interface{})["value"] == tag.Value {
-					toSave = append(toSave, tag)
+		var tags []api.FeatureTag
+		if featureTags != nil {
+			tags = featureTags.Tags
+		}
+		sort.Slice(tags, func(i, j int) bool {
+			if tags[i].Type != tags[j].Type {
+				return tags[i].Type < tags[j].Type
+			}
+			return tags[i].Value < tags[j].Value
+		})
+		_ = d.Set("tag", flattenTags(tags))
+	} else {
+		if e, ok := d.GetOk("environment"); ok {
+			toSave := []api.Environment{}
+			for _, tfEnvironment := range e.([]interface{}) {
+				for _, env := range feature.Environments {
+					if tfEnvironment.(map[string]interface{})["name"] == env.Name {
+						toSave = append(toSave, env)
+					}
 				}
 			}
+			_ = d.Set("environment", flattenEnvironments(toSave))
 		}
 
-		_ = d.Set("tag", flattenTags(toSave))
+		if t, ok := d.GetOk("tag"); ok {
+			featureTags, _, err := client.FeatureTags.GetAllFeatureTags(feature.Name)
+			if err != nil && err != api.ErrNotFound {
+				return diag.FromErr(err)
+			}
+			toSave := []api.FeatureTag{}
+			if featureTags == nil {
+				_ = d.Set("tag", flattenTags(toSave))
+				return diags
+			}
+			for _, tfTag := range t.([]interface{}) {
+				tfTagMap := tfTag.(map[string]interface{})
+				for _, tag := range featureTags.Tags {
+					if tfTagMap["type"] == tag.Type && tfTagMap["value"] == tag.Value {
+						toSave = append(toSave, tag)
+					}
+				}
+			}
+			_ = d.Set("tag", flattenTags(toSave))
+		}
 	}
 
 	return diags
+}
+
+func resourceFeatureV2ImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	parts := strings.Split(d.Id(), "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return nil, fmt.Errorf("unexpected format of ID (%q), expected project_id/feature_name", d.Id())
+	}
+	if err := d.Set("project_id", parts[0]); err != nil {
+		return nil, fmt.Errorf("error setting project_id: %w", err)
+	}
+	d.SetId(parts[1])
+	return []*schema.ResourceData{d}, nil
 }
 
 func resourceFeatureV2Update(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -699,4 +749,98 @@ func toFeatureTag(tfTag map[string]interface{}) api.FeatureTag {
 	tag.Type = tfTag["type"].(string)
 	tag.Value = tfTag["value"].(string)
 	return tag
+}
+
+func validateConstraintContextNames(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	environments := d.Get("environment").([]interface{})
+
+	type constraintRef struct {
+		contextName string
+		envName     string
+		stratName   string
+	}
+
+	var refs []constraintRef
+	for i, env := range environments {
+		envMap, ok := env.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		envName, _ := envMap["name"].(string)
+
+		strategies, _ := envMap["strategy"].([]interface{})
+		for j, strat := range strategies {
+			stratMap, ok := strat.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			stratName, _ := stratMap["name"].(string)
+
+			constraints, _ := stratMap["constraint"].([]interface{})
+			for k, constr := range constraints {
+				constrMap, ok := constr.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				contextNameKey := fmt.Sprintf("environment.%d.strategy.%d.constraint.%d.context_name", i, j, k)
+				if !d.NewValueKnown(contextNameKey) {
+					continue
+				}
+
+				contextName, _ := constrMap["context_name"].(string)
+				if contextName == "" {
+					return fmt.Errorf("context_name must not be empty (environment %q, strategy %q)", envName, stratName)
+				}
+				refs = append(refs, constraintRef{contextName, envName, stratName})
+			}
+		}
+	}
+
+	if len(refs) == 0 {
+		return nil
+	}
+
+	allBuiltin := true
+	for _, ref := range refs {
+		if !builtinContextFields[ref.contextName] {
+			allBuiltin = false
+			break
+		}
+	}
+	if allBuiltin {
+		return nil
+	}
+
+	clients, ok := meta.(*ApiClients)
+	if !ok || clients == nil {
+		return nil
+	}
+
+	validContexts, err := clients.GetValidContextNames(ctx)
+	if err != nil {
+		var unverifiable []string
+		for _, ref := range refs {
+			if !builtinContextFields[ref.contextName] {
+				unverifiable = append(unverifiable, fmt.Sprintf("%q (environment %q, strategy %q)", ref.contextName, ref.envName, ref.stratName))
+			}
+		}
+		if len(unverifiable) > 0 {
+			return fmt.Errorf("cannot validate custom context fields %s: %w", strings.Join(unverifiable, ", "), err)
+		}
+		return nil
+	}
+
+	var invalid []string
+	for _, ref := range refs {
+		if !validContexts[ref.contextName] {
+			invalid = append(invalid, fmt.Sprintf("%q (environment %q, strategy %q)", ref.contextName, ref.envName, ref.stratName))
+		}
+	}
+
+	if len(invalid) > 0 {
+		return fmt.Errorf("unknown context fields: %s", strings.Join(invalid, ", "))
+	}
+
+	return nil
 }
