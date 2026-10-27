@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"time"
 
 	openapiclient "github.com/Unleash/unleash-server-api-go/client"
@@ -128,21 +129,38 @@ func resourceApiTokenRead(ctx context.Context, d *schema.ResourceData, meta inte
 	}
 	tokens := resp.Tokens
 
-	var foundApiToken openapiclient.ApiTokenSchema
-	for _, token := range tokens {
-		if token.Secret == secret {
-			foundApiToken = token
+	var foundApiToken *openapiclient.ApiTokenSchema
+	for i := range tokens {
+		if tokenMatchesSecret(tokens[i].Secret, secret) {
+			foundApiToken = &tokens[i]
 			break
 		}
+	}
+
+	if foundApiToken == nil {
+		d.SetId("")
+		return diags
 	}
 
 	_ = d.Set("token_name", foundApiToken.TokenName)
 	_ = d.Set("type", foundApiToken.Type)
 	_ = d.Set("environment", foundApiToken.Environment)
 	_ = d.Set("created_at", foundApiToken.CreatedAt.Format(time.RFC3339))
-	_ = d.Set("secret", foundApiToken.Secret)
 
 	return diags
+}
+
+// Unleash >= 8.3 stores secure tokens (`<prefix>.v2_<selector>_<verifier>`) and lists only the selector.
+func tokenMatchesSecret(listed, secret string) bool {
+	if listed == secret {
+		return true
+	}
+	_, afterPrefix, found := strings.Cut(secret, ".v2_")
+	if !found {
+		return false
+	}
+	selector, _, _ := strings.Cut(afterPrefix, "_")
+	return selector != "" && listed == selector
 }
 
 func resourceApiTokenUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
