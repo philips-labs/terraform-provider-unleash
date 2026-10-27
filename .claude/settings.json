@@ -11,5 +11,8 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "testcontainers@testcontainers-claude-skills": true
   }
 }

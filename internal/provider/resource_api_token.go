@@ -85,16 +85,16 @@ func resourceApiTokenCreate(ctx context.Context, d *schema.ResourceData, meta in
 	projects := toStringArr(d.Get("projects").(*schema.Set).List())
 	expiresAt := d.Get("expires_at").(string)
 
-	createApiTokenSchema := openapiclient.CreateApiTokenSchema{CreateApiTokenSchemaOneOf2: openapiclient.NewCreateApiTokenSchemaOneOf2(tokenType, tokenName)}
-	createApiTokenSchema.CreateApiTokenSchemaOneOf2.Environment = &environment
-	createApiTokenSchema.CreateApiTokenSchemaOneOf2.Projects = projects
-	createApiTokenSchema.CreateApiTokenSchemaOneOf2.ExpiresAt = nil
+	createApiTokenSchema := openapiclient.CreateApiTokenSchemaOneOfAsCreateApiTokenSchema(openapiclient.NewCreateApiTokenSchemaOneOf(tokenType, tokenName))
+	createApiTokenSchema.CreateApiTokenSchemaOneOf.Environment = &environment
+	createApiTokenSchema.CreateApiTokenSchemaOneOf.Projects = projects
+	createApiTokenSchema.CreateApiTokenSchemaOneOf.ExpiresAt = nil
 	if expiresAt != "" {
 		res, parseErr := time.Parse(time.RFC3339, expiresAt)
 		if parseErr != nil {
 			return diag.FromErr(parseErr)
 		}
-		createApiTokenSchema.CreateApiTokenSchemaOneOf2.ExpiresAt = &res
+		createApiTokenSchema.CreateApiTokenSchemaOneOf.ExpiresAt = &res
 	}
 
 	createdToken, resp, err := client.APITokensAPI.CreateApiToken(ctx).CreateApiTokenSchema(createApiTokenSchema).Execute()
