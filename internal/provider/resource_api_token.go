@@ -150,13 +150,11 @@ func resourceApiTokenRead(ctx context.Context, d *schema.ResourceData, meta inte
 	return diags
 }
 
-// Unleash >= 8.3 stores secure tokens (`<prefix>.v2_<selector>_<verifier>`) and lists only the selector.
 func tokenMatchesSecret(listed, secret string) bool {
 	if listed == secret {
 		return true
 	}
 	_, afterPrefix, found := strings.Cut(secret, ".v2_")
-	// base64url selectors may themselves contain "_", so match on prefix rather than splitting.
 	return found && listed != "" && strings.HasPrefix(afterPrefix, listed+"_")
 }
 
