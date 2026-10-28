@@ -156,11 +156,8 @@ func tokenMatchesSecret(listed, secret string) bool {
 		return true
 	}
 	_, afterPrefix, found := strings.Cut(secret, ".v2_")
-	if !found {
-		return false
-	}
-	selector, _, _ := strings.Cut(afterPrefix, "_")
-	return selector != "" && listed == selector
+	// base64url selectors may themselves contain "_", so match on prefix rather than splitting.
+	return found && listed != "" && strings.HasPrefix(afterPrefix, listed+"_")
 }
 
 func resourceApiTokenUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
