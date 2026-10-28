@@ -63,3 +63,28 @@ resource "unleash_api_token" "foo" {
 	expires_at = "2023-04-15T14:30:45Z"
 }`, suffix)
 }
+
+func TestTokenMatchesSecret(t *testing.T) {
+	tests := []struct {
+		name   string
+		listed string
+		secret string
+		want   bool
+	}{
+		{"legacy token matches exactly", "*:development.abc123", "*:development.abc123", true},
+		{"legacy token differs", "*:development.abc123", "*:development.def456", false},
+		{"secure selector matches", "sel1234567890123456AB", "*:development.v2_sel1234567890123456AB_verifier", true},
+		{"secure selector containing underscore matches", "xhX1mlveq_PyJdXX4Xhvhw", "*:development.v2_xhX1mlveq_PyJdXX4Xhvhw_Gen8Qx", true},
+		{"secure selector differs", "other", "*:development.v2_sel_verifier", false},
+		{"selector is only a partial prefix", "sel", "*:development.v2_selector_verifier", false},
+		{"empty listed never matches", "", "*:development.v2__verifier", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tokenMatchesSecret(tt.listed, tt.secret); got != tt.want {
+				t.Errorf("tokenMatchesSecret(%q, %q) = %v, want %v", tt.listed, tt.secret, got, tt.want)
+			}
+		})
+	}
+}
