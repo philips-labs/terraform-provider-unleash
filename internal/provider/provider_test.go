@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -40,6 +41,7 @@ func TestMain(m *testing.M) {
 		tcpostgres.WithDatabase("unleash"),
 		tcpostgres.WithUsername("unleash_user"),
 		tcpostgres.WithPassword("some_password"),
+		tcpostgres.BasicWaitStrategies(),
 		network.WithNetwork([]string{"postgres"}, nw),
 	)
 	if err != nil {
@@ -98,11 +100,40 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 
+	if code != 0 {
+		logContainerDiagnostics("unleash", unleashContainer)
+		logContainerDiagnostics("postgres", pgContainer)
+	}
+
 	_ = testcontainers.TerminateContainer(unleashContainer)
 	_ = testcontainers.TerminateContainer(pgContainer)
 	_ = nw.Remove(ctx)
 
 	os.Exit(code)
+}
+
+func logContainerDiagnostics(name string, container testcontainers.Container) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	state, err := container.State(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s: failed to get container state: %s\n", name, err)
+	} else {
+		fmt.Fprintf(os.Stderr, "%s container state: %+v\n", name, state)
+	}
+
+	logs, err := container.Logs(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s: failed to get container logs: %s\n", name, err)
+		return
+	}
+	defer logs.Close()
+
+	fmt.Fprintf(os.Stderr, "%s container logs:\n", name)
+	if _, err := io.Copy(os.Stderr, logs); err != nil {
+		fmt.Fprintf(os.Stderr, "%s: failed to read container logs: %s\n", name, err)
+	}
 }
 
 // providerFactories are used to instantiate a provider during acceptance testing.
